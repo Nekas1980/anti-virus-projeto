@@ -6,6 +6,7 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
+import fnmatch
 
 BUFFER_SIZE = 1024 * 1024
 LOG_FILE = "scan.log"
@@ -57,6 +58,46 @@ def load_signatures(signature_file: Path) -> Dict[str, str]:
         logger.error(f"Erro ao carregar assinaturas: {e}")
         return {}
 
+def load_exclusions(exclusion_file: Path) -> List[str]:
+    """Carrega padrões de exclusão do arquivo JSON."""
+    if not exclusion_file.exists():
+        logger.info(f"Arquivo de exclusões não encontrado, usando padrões padrão")
+        return get_default_exclusions()
+    try:
+        with exclusion_file.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+        patterns = data.get("exclusion_patterns", [])
+        logger.info(f"Carregados {len(patterns)} padrões de exclusão")
+        return patterns
+    except (json.JSONDecodeError, IOError) as e:
+        logger.warning(f"Erro ao carregar exclusões, usando padrões padrão: {e}")
+        return get_default_exclusions()
+
+def get_default_exclusions() -> List[str]:
+    """Retorna padrões de exclusão padrão."""
+    return [
+        "node_modules",
+        ".git",
+        ".venv",
+        "venv",
+        "__pycache__",
+        ".pytest_cache",
+        ".idea",
+        ".vscode",
+        "*.egg-info",
+        ".DS_Store",
+        "Thumbs.db",
+        ".env",
+    ]
+
+def should_skip_path(path: Path, exclusion_patterns: List[str]) -> bool:
+    """Verifica se um caminho deve ser ignorado baseado nos padrões de exclusão."""
+    path_str = str(path)
+    for pattern in exclusion_patterns:
+        if fnmatch.fnmatch(path_str, f"*{pattern}*") or fnmatch.fnmatch(path.name, pattern):
+            return True
+    return False
+
 def scan_file(file_path: Path, signatures: Dict[str, str]) -> ScanResult:
     """Analisa um ficheiro individual contra as assinaturas de malware."""
     if not file_path.is_file():
@@ -81,11 +122,14 @@ def scan_file(file_path: Path, signatures: Dict[str, str]) -> ScanResult:
         sha256=digest,
     )
 
-def scan_directory(root: Path, signatures: Dict[str, str]) -> List[ScanResult]:
-    """Varre recursivamente um diretório e retorna os resultados."""
+def scan_directory(root: Path, signatures: Dict[str, str], exclusions: List[str]) -> List[ScanResult]:
+    """Varre recursivamente um diretório e retorna os resultados, respeitando exclusões."""
     results: List[ScanResult] = []
     try:
         for path in root.rglob("*"):
+            if should_skip_path(path, exclusions):
+                logger.debug(f"Ignorando (exclusão): {path}")
+                continue
             if path.is_file():
                 results.append(scan_file(path, signatures))
     except (IOError, OSError) as e:
@@ -144,7 +188,10 @@ def main() -> None:
     if not signatures:
         logger.warning("Nenhuma assinatura carregada!")
 
-    results = scan_directory(target_dir, signatures)
+    exclusions = load_exclusions(Path("exclusions.json"))
+    logger.info(f"Usando {len(exclusions)} padrões de exclusão")
+
+    results = scan_directory(target_dir, signatures, exclusions)
     infected = [r for r in results if r.status == "infected"]
     clean = [r for r in results if r.status == "clean"]
 

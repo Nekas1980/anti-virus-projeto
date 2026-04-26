@@ -3,7 +3,7 @@ from tkinter import filedialog, messagebox, ttk
 from pathlib import Path
 import threading
 import os
-from Virus_project import load_signatures, scan_file, quarantine_file, save_report
+from Virus_project import load_signatures, load_exclusions, scan_file, quarantine_file, save_report, should_skip_path
 
 # ─── CORES ────────────────────────────────────────────
 BG        = "#060a06"
@@ -123,9 +123,12 @@ def correr_scan_pc():
 
 def fazer_scan_multiplas(pastas):
     signatures = load_signatures(Path("signatures.json"))
+    exclusions = load_exclusions(Path("exclusions.json"))
     todos = []
     for pasta in pastas:
-        todos += [p for p in pasta.rglob("*") if p.is_file()]
+        for p in pasta.rglob("*"):
+            if p.is_file() and not should_skip_path(p, exclusions):
+                todos.append(p)
     total = len(todos)
 
     if total == 0:
