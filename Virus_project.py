@@ -58,6 +58,24 @@ def load_signatures(signature_file: Path) -> Dict[str, str]:
         logger.error(f"Erro ao carregar assinaturas: {e}")
         return {}
 
+def add_signature(file_hash: str, malware_name: str, signature_file: Path = Path("signatures.json")) -> bool:
+    """Adiciona uma nova assinatura de malware. Retorna True se bem-sucedido."""
+    try:
+        signatures = load_signatures(signature_file)
+        if file_hash in signatures:
+            logger.warning(f"Assinatura já existe: {file_hash}")
+            return False
+        signatures[file_hash] = malware_name
+        signature_file.parent.mkdir(parents=True, exist_ok=True)
+        data = {"malware_hashes": signatures}
+        with signature_file.open("w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        logger.info(f"Assinatura adicionada: {file_hash} → {malware_name}")
+        return True
+    except (IOError, OSError, json.JSONDecodeError) as e:
+        logger.error(f"Erro ao adicionar assinatura: {e}")
+        return False
+
 def load_exclusions(exclusion_file: Path) -> List[str]:
     """Carrega padrões de exclusão do arquivo JSON."""
     if not exclusion_file.exists():
