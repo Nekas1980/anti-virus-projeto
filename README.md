@@ -34,10 +34,27 @@ Este projeto é um motor de varredura (*scanning engine*) simplificado, desenvol
     source venv/bin/activate  # No Windows: venv\Scripts\activate
     ```
 
-4.  **Executar o script:**
-    ```bash
-    python main.py
-    ```
+4.  **Escolher versão e executar:**
+    
+    - **GUI Simples** (básica):
+      ```bash
+      python gui.py
+      ```
+    
+    - **GUI Intermediária** (threading, logs coloridos):
+      ```bash
+      python gui2.py
+      ```
+    
+    - **GUI Avançada** (recomendada — progress bar, gráficos, 3 tipos de scan):
+      ```bash
+      python gui3.py
+      ```
+    
+    - **CLI** (terminal, sem interface gráfica):
+      ```bash
+      python Virus_project.py
+      ```
 
 ## ⚙️ Lógica de Funcionamento
 

@@ -122,7 +122,7 @@ def correr_scan_pc():
     threading.Thread(target=fazer_scan_multiplas, args=(pastas,), daemon=True).start()
 
 def fazer_scan_multiplas(pastas):
-    signatures = load_signatures(Path("assinaturas.json"))
+    signatures = load_signatures(Path("signatures.json"))
     todos = []
     for pasta in pastas:
         todos += [p for p in pasta.rglob("*") if p.is_file()]

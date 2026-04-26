@@ -15,7 +15,7 @@ def correr_scan():
         return
 
     target_dir = Path(pasta)
-    signatures = load_signatures(Path("assinaturas.json"))
+    signatures = load_signatures(Path("signatures.json"))
     results = scan_directory(target_dir, signatures)
 
     infected = [r for r in results if r.status == "infected"]

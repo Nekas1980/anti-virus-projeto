@@ -26,7 +26,7 @@ def correr_scan():
 
 def fazer_scan(pasta):
     target_dir = Path(pasta)
-    signatures = load_signatures(Path("assinaturas.json"))
+    signatures = load_signatures(Path("signatures.json"))
 
     # Conta total de ficheiros primeiro
     ficheiros = [p for p in target_dir.rglob("*") if p.is_file()]
