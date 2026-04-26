@@ -198,7 +198,7 @@ header = tk.Frame(janela, bg=SURFACE, pady=12)
 header.pack(fill="x")
 tk.Label(header, text="// SCANNER ANTIVÍRUS", font=("Courier", 16, "bold"),
          bg=SURFACE, fg=GREEN).pack(side="left", padx=20)
-tk.Label(header, text="v3.0 — Python", font=("Courier", 9),
+tk.Label(header, text="v1.0 — Python", font=("Courier", 9),
          bg=SURFACE, fg=MUTED).pack(side="right", padx=20)
 
 # ─── CORPO ────────────────────────────────────────────
