@@ -1,0 +1,20 @@
+{
+  "malware_hashes": {
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855": "Trojan.EmptyFile.Test",
+    "d41d8cd98f00b204e9800998ecf8427e": "Malware.NullByte.Generic",
+    "aec070645fe53ee3b3763059376134f058cc337247c978add178b6ccdfb0019f": "Ransomware.WannaCry.Sim",
+    "f2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2": "Spyware.KeyLogger.Sim",
+    "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08": "Trojan.Backdoor.Sim",
+    "3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c1835420b6b9942dd4f1b": "Adware.BrowserHijack.Sim",
+    "b94f6f125c79e3a5ffaa826f584c10d52ada669e6762051b826b55776d05a8c7": "Worm.AutoSpread.Sim",
+    "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4": "Rootkit.Stealth.Sim",
+    "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef": "Virus.Generic.Test",
+    "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd": "Malware.Simulation.Test"
+  },
+  "_info": {
+    "description": "Ficheiro de assinaturas de teste para o scanner ClamAV",
+    "author": "Projeto Anti-Virus - Python Bootcamp",
+    "version": "1.0.0",
+    "note": "Estes hashes são fictícios para fins de aprendizagem. Num ambiente real, usarias bases de dados como VirusTotal ou ClamAV CVD."
+  }
+}
