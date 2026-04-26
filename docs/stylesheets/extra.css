@@ -1,0 +1,127 @@
+:root {
+    --md-primary-fg-color: #030503;
+    --md-primary-bg-color: #00ffa3;
+    --md-accent-fg-color: #00ffa3;
+    
+    /* Cyber Colors */
+    --cyber-mint: #00ffa3;
+    --cyber-bg: #030503;
+    --cyber-surface: #0a0c0a;
+    --cyber-border: rgba(0, 255, 163, 0.2);
+    --cyber-glow: 0 0 10px rgba(0, 255, 163, 0.3);
+}
+
+/* Fundo Geral */
+body {
+    background-color: var(--cyber-bg);
+    font-family: 'Share Tech Mono', monospace !important;
+}
+
+.md-main {
+    background-color: var(--cyber-bg);
+}
+
+/* Header Estilo Terminal */
+.md-header {
+    background-color: var(--cyber-surface) !important;
+    border-bottom: 1px solid var(--cyber-border) !important;
+    backdrop-filter: blur(10px);
+}
+
+.md-header__title {
+    color: var(--cyber-mint) !important;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+/* Navegação Lateral */
+.md-nav {
+    font-size: 0.8rem;
+}
+
+.md-nav__link {
+    color: #8fa88f !important;
+}
+
+.md-nav__link:hover {
+    color: var(--cyber-mint) !important;
+    text-shadow: var(--cyber-glow);
+}
+
+.md-nav__link--active {
+    color: var(--cyber-mint) !important;
+    border-left: 2px solid var(--cyber-mint);
+    background: rgba(0, 255, 163, 0.05);
+}
+
+/* Conteúdo */
+.md-content {
+    background-color: var(--cyber-bg);
+    color: #e8f5e8;
+}
+
+h1, h2, h3 {
+    color: var(--cyber-mint) !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--cyber-border) !important;
+    padding-bottom: 0.5rem;
+}
+
+/* Code Blocks */
+.highlight {
+    background-color: #000 !important;
+    border: 1px solid var(--cyber-border);
+    border-radius: 8px;
+    box-shadow: inset 0 0 20px rgba(0, 255, 163, 0.05);
+}
+
+code {
+    background-color: rgba(0, 255, 163, 0.1) !important;
+    color: var(--cyber-mint) !important;
+    border-radius: 4px;
+}
+
+/* Hero Section Custom */
+.hero-section {
+    border: 2px solid var(--cyber-mint) !important;
+    box-shadow: var(--cyber-glow), inset 0 0 30px rgba(0, 255, 163, 0.05) !important;
+    background: var(--cyber-surface) !important;
+}
+
+.md-button--primary {
+    background-color: var(--cyber-mint) !important;
+    color: var(--cyber-bg) !important;
+    border: none !important;
+    font-weight: 800 !important;
+    text-transform: uppercase;
+}
+
+.md-button:hover {
+    background-color: #fff !important;
+    box-shadow: 0 0 20px var(--cyber-mint) !important;
+}
+
+/* Adicionar Scanline Effect */
+body::after {
+    content: " ";
+    display: block;
+    position: fixed;
+    top: 0; left: 0; bottom: 0; right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+    z-index: 9999;
+    background-size: 100% 4px, 3px 100%;
+    pointer-events: none;
+    opacity: 0.3;
+}
+
+/* Tabs */
+.md-tabs {
+    background-color: var(--cyber-surface) !important;
+    border-bottom: 1px solid var(--cyber-border);
+}
+
+.md-tabs__link--active {
+    color: var(--cyber-mint) !important;
+}
