@@ -4,10 +4,14 @@ Este projeto é um motor de varredura (*scanning engine*) simplificado, desenvol
 
 ## 🚀 Funcionalidades
 
-* **Deteção por Assinatura:** Gera hashes (MD5/SHA256) dos ficheiros e compara-os com uma base de dados de malware conhecido.
+* **Deteção por Assinatura:** Gera hashes SHA256 dos ficheiros e compara-os com uma base de dados de malware conhecido.
 * **Varrimento Recursivo:** Analisa pastas e subpastas à procura de ameaças.
-* **Interface Simples:** Feedback imediato no terminal sobre o estado de cada ficheiro verificado.
-* **Log de Ameaças:** Registo detalhado de todos os ficheiros suspeitos encontrados durante a execução.
+* **Exclusões Configuráveis:** Ignora diretórios como node_modules, .git, venv, etc.
+* **VirusTotal Integration:** Atualiza assinaturas com dados da API do VirusTotal (opcional).
+* **Varreduras Agendadas:** Executa scans automáticos em horários configuráveis.
+* **Relatórios Avançados:** Gera relatórios em HTML, JSON com estatísticas detalhadas.
+* **Quarentena Automática:** Move ficheiros infectados para zona de quarentena.
+* **Log de Ameaças:** Registo detalhado com logging estruturado.
 
 ## 🛠️ Tecnologias e Bibliotecas
 
@@ -55,6 +59,31 @@ Este projeto é um motor de varredura (*scanning engine*) simplificado, desenvol
       ```bash
       python Virus_project.py
       ```
+    
+    - **Atualizar Assinaturas** (VirusTotal):
+      ```bash
+      export VIRUSTOTAL_API_KEY="sua_chave"
+      python virustotal_updater.py
+      ```
+    
+    - **Varreduras Agendadas** (background):
+      ```bash
+      python scheduler.py create-config  # Criar configuração inicial
+      python scheduler.py run            # Executar scheduler
+      ```
+
+## 🧪 Executar Testes Unitários
+
+```bash
+python -m unittest test_virus_project -v
+```
+
+Cobre 18 testes incluindo:
+- Cálculo de hashes SHA256
+- Carregamento de assinaturas e exclusões
+- Varredura de ficheiros
+- Quarentena de ameaças
+- Adição de novas assinaturas
 
 ## ⚙️ Lógica de Funcionamento
 
