@@ -1,6 +1,6 @@
-site_name: Antivírus Projeto
+site_name: Cyber-Sentinel 🛡️
 site_description: Educational malware detection engine demonstrating cybersecurity fundamentals
-site_author: Nekas1980
+site_author: Nelson M Madeira Rijo
 site_url: https://nekas1980.github.io/anti-virus-projeto/
 repo_url: https://github.com/Nekas1980/anti-virus-projeto
 repo_name: Nekas1980/anti-virus-projeto
@@ -9,33 +9,26 @@ edit_uri: edit/main/docs/
 theme:
   name: material
   palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: indigo
-      accent: indigo
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
-      accent: indigo
+      primary: teal
+      accent: cyan
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
   features:
     - navigation.tabs
     - navigation.sections
-    - navigation.expand
-    - toc.integrate
     - search.suggest
     - search.highlight
     - content.code.copy
-    - content.action.edit
-
-plugins:
-  - search
-  - mkdocstrings
 
 markdown_extensions:
   - pymdownx.highlight:
@@ -43,26 +36,27 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
-  - pymdownx.tasklist
   - admonition
   - tables
+  - attr_list
+  - md_in_html
   - toc:
       permalink: true
 
 nav:
   - Home: index.md
-  - Getting Started:
-    - Installation: guides/installation.md
-    - Quick Start: guides/quickstart.md
-    - How It Works: guides/how-it-works.md
-  - Documentation:
-    - Architecture: architecture/architecture.md
-    - Development: architecture/development.md
-    - Building & Distribution: architecture/build.md
-  - Contributing:
-    - Guidelines: contribute/guidelines.md
-    - Project Structure: contribute/structure.md
+  - Guias:
+    - Instalação: guides/installation.md
+    - Início Rápido: guides/quickstart.md
+    - Funcionamento: guides/how-it-works.md
+  - Documentação:
+    - Arquitetura: architecture/architecture.md
+    - Desenvolvimento: architecture/development.md
+    - Build: architecture/build.md
+  - Contribuir:
+    - Diretrizes: contribute/guidelines.md
+    - Estrutura: contribute/structure.md
     - Roadmap: contribute/roadmap.md
-  - About:
-    - License: about/license.md
-    - Session Summary: about/session-summary.md
+  - Sobre:
+    - Licença: about/license.md
+    - Resumo da Sessão: about/session-summary.md

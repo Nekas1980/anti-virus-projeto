@@ -1,193 +1,67 @@
-# Antivírus Projeto
+# Cyber-Sentinel 🛡️
 
-**Educational malware detection engine demonstrating cybersecurity fundamentals.**
+<div class="hero-section" style="text-align: center; padding: 3rem 0; background: rgba(0, 255, 163, 0.02); border-radius: 24px; border: 1px solid rgba(0, 255, 163, 0.1); margin-bottom: 3rem;">
+    <h1 style="font-size: 3.5rem; margin-bottom: 1rem; color: #00ffa3;">Defesa Total</h1>
+    <p style="font-size: 1.2rem; color: #8fa88f; max-width: 700px; margin: 0 auto 2rem;">
+        Scanner ultra-leve com deteção SHA-256, quarentena inteligente e relatórios estruturados. O futuro da segurança open-source em Python.
+    </p>
+    <div style="display: flex; gap: 1rem; justify-content: center;">
+        <a href="guides/installation/" class="md-button md-button--primary">Instalação</a>
+        <a href="https://github.com/Nekas1980/anti-virus-projeto" class="md-button">Ver no GitHub</a>
+    </div>
+</div>
 
-An open-source Python project teaching hash-based malware scanning, pattern matching, file system traversal, API integration, and security best practices.
+## 🔍 Core Capabilities
 
-## 🎓 Educational Objective
+<div class="features-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
+    <div class="feature-card" style="padding: 2rem; background: rgba(0, 255, 163, 0.03); border: 1px solid rgba(0, 255, 163, 0.1); border-radius: 16px;">
+        <h3 style="color: #00ffa3; margin-top: 0;">Deteção SHA-256</h3>
+        <p>Algoritmos de integridade que garantem a identificação absoluta de ameaças conhecidas.</p>
+    </div>
+    <div class="feature-card" style="padding: 2rem; background: rgba(0, 255, 163, 0.03); border: 1px solid rgba(0, 255, 163, 0.1); border-radius: 16px;">
+        <h3 style="color: #00ffa3; margin-top: 0;">Quarentena</h3>
+        <p>Isolamento seguro de ficheiros maliciosos num ambiente protegido e controlado.</p>
+    </div>
+    <div class="feature-card" style="padding: 2rem; background: rgba(0, 255, 163, 0.03); border: 1px solid rgba(0, 255, 163, 0.1); border-radius: 16px;">
+        <h3 style="color: #00ffa3; margin-top: 0;">Zero-Dep</h3>
+        <p>Desenvolvido exclusivamente com a biblioteca padrão do Python. Segurança sem bloat.</p>
+    </div>
+</div>
 
-Learn how antivirus software works by building a signature-based detection engine:
+## 🚀 Início Rápido
 
-- **File integrity**: How SHA256 hashing uniquely identifies files
-- **Pattern matching**: Comparing computed values against known malware databases
-- **Configuration management**: Loading and applying exclusion rules
-- **External APIs**: Integrating with VirusTotal threat intelligence
-- **Automation**: Scheduling tasks and generating reports
-- **Software engineering**: Testing, logging, and production distribution
-
-## ⚠️ Important Disclaimer
-
-**This project is for EDUCATIONAL PURPOSES ONLY.** It is NOT production-ready and should NOT be used as a primary antivirus solution. It demonstrates basic malware scanning concepts and is intended for learning, not real-world protection.
-
-## ✨ Features
-
-- 🔍 **Signature-based scanning** — Detects malware by SHA256 hash comparison
-- 📁 **Recursive directory scanning** — Analyzes all subdirectories automatically
-- ⚙️ **Configurable exclusions** — Skip directories with pattern matching
-- 📊 **HTML & JSON reports** — Export scan results in multiple formats
-- 🕐 **Scheduled scanning** — Automate scans with interval-based scheduling
-- 🌐 **VirusTotal API** — Update signatures from external threat intelligence
-- 🖥️ **Multiple interfaces** — CLI, GUI (Tkinter), and batch processing
-- 🧪 **18 unit tests** — Comprehensive test coverage across Python 3.9-3.12
-- 🤖 **CI/CD pipeline** — Automated testing on 12 environments (3 OS × 4 Python versions)
-
-## 🚀 Quick Start
-
-### Prerequisites
-- Python 3.9 or later
-- Git
-
-### Installation
-
-```bash
-# Clone repository
-git clone https://github.com/Nekas1980/anti-virus-projeto.git
-cd anti-virus-projeto
-
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### Run Scanner
-
-```bash
-# CLI mode
-python Virus_project.py /path/to/scan
-
-# GUI mode
-python gui3.py
-
-# Scheduler (background scans)
-python scheduler.py create-config
-python scheduler.py run
-```
-
-## 📚 Documentation
-
-- **[Getting Started](guides/installation.md)** — Setup and first steps
-- **[How It Works](guides/how-it-works.md)** — Technical overview
-- **[Architecture](architecture/architecture.md)** — Detailed design and modules
-- **[Development](architecture/development.md)** — Development setup and workflow
-- **[Contributing](contribute/guidelines.md)** — Contribution guidelines
-- **[Roadmap](contribute/roadmap.md)** — Future improvements
-
-## 🏗️ Architecture Overview
-
-```
-User Interface (CLI, GUI, Batch)
-        ↓
-Scanning Engine (hash matching, recursion)
-        ↓
-Support Services (API, scheduler, reports)
-        ↓
-Data Layer (JSON configs, quarantine)
-```
-
-## 📊 Project Statistics
-
-| Metric | Value |
-|--------|-------|
-| **Core code** | ~500 lines Python |
-| **Tests** | 18 unit tests |
-| **CI/CD** | 12 test matrices |
-| **Compatibility** | Python 3.9, 3.10, 3.11, 3.12 |
-| **OS Support** | Windows, macOS, Linux |
-| **Dependencies** | 2 (colorama, requests) |
-| **Documentation** | 1200+ lines |
-
-## 🔧 Components
-
-### Core Scanning (`Virus_project.py`)
-- SHA256 file hashing
-- Signature database loading
-- Recursive directory scanning
-- Exclusion pattern matching
-- Malware quarantine
-
-### User Interfaces
-- **CLI** — Command-line interface
-- **GUI** — Tkinter-based graphical interface
-- **Scheduler** — Background automated scanning
-- **Batch** — Programmatic scanning
-
-### Integration & Reporting
-- **VirusTotal API** — External threat intelligence
-- **Report Generator** — HTML & JSON export
-- **Logging** — Audit trails and debugging
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-python -m unittest test_virus_project -v
-
-# Run with coverage
-pytest test_virus_project.py --cov=. --cov-report=html
-```
-
-**CI/CD**: Tests automatically run on every push across:
-- Ubuntu (latest)
-- macOS (latest)
-- Windows (latest)
-- Python 3.9, 3.10, 3.11, 3.12
-
-## 📦 Distribution
-
-### Development
-```bash
-pip install -e .
-```
-
-### PyPI Package
-Installable via pip, ready for distribution.
-
-### Standalone Executable
-Compiled Windows executable (no Python required).
-
-### Docker
-Containerized deployment.
-
-## 🤝 Contributing
-
-We welcome contributions! Before submitting:
-
-1. Read [Contributing Guidelines](contribute/guidelines.md)
-2. Check [Project Structure](contribute/structure.md)
-3. Run tests: `python -m unittest test_virus_project -v`
-4. Format code: `black .`
-
-## 🗺️ Roadmap
-
-Short term:
-- Web UI (Flask/FastAPI + React)
-- Database backend (SQLite/PostgreSQL)
-- YARA rules integration
-
-Medium term:
-- ML-based detection
-- Real-time file monitoring
-- REST API server
-
-Long term:
-- Distributed scanning
-- Advanced threat feeds
-- Kubernetes deployment
-
-See [full roadmap](contribute/roadmap.md).
-
-## 📝 License
-
-MIT License — See LICENSE file for details.
-
-## 👤 Author
-
-[Nelson M Madeira Rijo](https://github.com/Nekas1980)  
-*Python Bootcamp — IEFP 2026 · Transition to Cybersecurity* 🔐
+1.  **Configuração**: Instale o Python 3.9+ e clone o repositório.
+2.  **Operação**: Execute `python Virus_project.py` e indique a pasta alvo.
 
 ---
 
-**Get started**: [Installation Guide →](guides/installation.md)
+## 🏗️ Arquitetura
+
+```mermaid
+graph TD
+    UI[User Interface] --> Engine[Scanning Engine]
+    Engine --> Support[Support Services]
+    Support --> Data[Data Layer]
+```
+
+## 📊 Estatísticas do Projeto
+
+| Métrica | Valor |
+| :--- | :--- |
+| **Código Core** | ~500 linhas Python |
+| **Testes** | 18 unit tests |
+| **Compatibilidade** | Python 3.9+ |
+| **Licença** | MIT |
+
+---
+
+## 🛣️ Roadmap
+
+- [x] Motor de Hashing SHA-256
+- [x] Quarentena Inteligente
+- [ ] Interface CustomTkinter Premium (Em curso)
+- [ ] Integração API VirusTotal
+
+---
+Desenvolvido por [Nelson M Madeira Rijo](https://github.com/Nekas1980)  
+*Python Bootcamp — IEFP 2026 · Transition to Cybersecurity* 🔐
