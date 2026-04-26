@@ -3,4 +3,5 @@
 # Bibliotecas utilizadas: hashlib, json, pathlib, os, shutil (todas built-in)
 
 # Dependências opcionais:
-# colorama>=0.4.6  # Para output colorido no terminal (ainda não implementado)
+colorama>=0.4.6  # Para output colorido no terminal
+customtkinter>=5.2.0  # Para interface gráfica moderna (estilo 2026)
