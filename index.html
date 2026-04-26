@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projeto Antivírus — Scanner ClamAV</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #00ff88;
+    --green-dim: #00cc66;
+    --green-dark: #003320;
+    --bg: #060a06;
+    --surface: #0d140d;
+    --border: #1a2e1a;
+    --text: #e8f5e8;
+    --muted: #5a7a5a;
+    --red: #ff4444;
+    --amber: #ffaa00;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    overflow-x: hidden;
+  }
+  /* GRID BG */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.2rem 2.5rem;
+    background: rgba(6,10,6,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo {
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--green);
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+  }
+  .nav-links { display: flex; gap: 2rem; list-style: none; }
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--green); }
+
+  /* HERO */
+  .hero {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 8rem 2rem 4rem;
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,255,136,0.08);
+    border: 1px solid rgba(0,255,136,0.2);
+    color: var(--green);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    padding: 6px 16px;
+    border-radius: 2px;
+    margin-bottom: 2rem;
+    letter-spacing: 0.1em;
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+  .hero h1 {
+    font-size: clamp(2.5rem, 7vw, 5.5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 span { color: var(--green); }
+  .hero p {
+    font-size: 1.1rem;
+    color: var(--muted);
+    max-width: 520px;
+    line-height: 1.8;
+    margin-bottom: 3rem;
+    font-weight: 400;
+  }
+  .btn-group { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+  .btn-primary {
+    background: var(--green);
+    color: var(--bg);
+    border: none;
+    padding: 14px 32px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    text-decoration: none;
+    border-radius: 2px;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .btn-primary:hover { background: var(--green-dim); transform: translateY(-1px); }
+  .btn-secondary {
+    background: transparent;
+    color: var(--green);
+    border: 1px solid rgba(0,255,136,0.3);
+    padding: 14px 32px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    text-decoration: none;
+    border-radius: 2px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--green); background: rgba(0,255,136,0.05); }
+
+  /* TERMINAL */
+  .terminal-wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 2rem 6rem;
+  }
+  .terminal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+  }
+  .terminal-bar {
+    background: #111811;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: #ff5f57; }
+  .dot-y { background: #febc2e; }
+  .dot-g { background: #28c840; }
+  .terminal-title { color: var(--muted); font-size: 0.75rem; margin-left: auto; margin-right: auto; }
+  .terminal-body { padding: 1.5rem; line-height: 2; }
+  .t-prompt { color: var(--green); }
+  .t-cmd { color: #fff; }
+  .t-out { color: var(--muted); }
+  .t-clean { color: #00cc66; }
+  .t-infected { color: var(--red); }
+  .t-warn { color: var(--amber); }
+  .t-done { color: var(--green); }
+  .cursor {
+    display: inline-block;
+    width: 8px; height: 14px;
+    background: var(--green);
+    animation: blink 1s infinite;
+    vertical-align: middle;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  /* FEATURES */
+  .section {
+    position: relative;
+    z-index: 1;
+    padding: 5rem 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .section-label {
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--green);
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    margin-bottom: 1rem;
+  }
+  .section-title {
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 3rem;
+  }
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+  .feature {
+    background: var(--bg);
+    padding: 2rem;
+    transition: background 0.2s;
+  }
+  .feature:hover { background: var(--surface); }
+  .feature-num {
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--green);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    margin-bottom: 1rem;
+    opacity: 0.6;
+  }
+  .feature h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem; }
+  .feature p { font-size: 0.9rem; color: var(--muted); line-height: 1.7; }
+
+  /* STEPS */
+  .steps { display: flex; flex-direction: column; gap: 0; }
+  .step {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 2rem;
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--border);
+    align-items: start;
+  }
+  .step:last-child { border-bottom: none; }
+  .step-num {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 2.5rem;
+    color: var(--border);
+    font-weight: 700;
+    line-height: 1;
+  }
+  .step h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .step p { font-size: 0.9rem; color: var(--muted); line-height: 1.7; }
+  .code-inline {
+    font-family: 'Share Tech Mono', monospace;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--green);
+    padding: 2px 8px;
+    font-size: 0.8rem;
+    border-radius: 2px;
+  }
+
+  /* ROADMAP */
+  .roadmap { display: flex; flex-direction: column; gap: 1rem; }
+  .roadmap-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    font-size: 0.9rem;
+  }
+  .roadmap-item.done { border-color: rgba(0,255,136,0.2); }
+  .roadmap-item.done .tag { background: rgba(0,255,136,0.1); color: var(--green); }
+  .roadmap-item.pending .tag { background: rgba(255,170,0,0.1); color: var(--amber); }
+  .tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.65rem;
+    padding: 3px 10px;
+    border-radius: 2px;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+
+  /* FOOTER */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 3rem 2rem;
+    text-align: center;
+  }
+  .footer-logo {
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--green);
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+  }
+  footer p { color: var(--muted); font-size: 0.85rem; line-height: 1.8; }
+  footer a { color: var(--green); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* DIVIDER */
+  .divider {
+    position: relative;
+    z-index: 1;
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 0;
+  }
+
+  /* ANIMATE IN */
+  .fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeIn 0.7s ease forwards;
+  }
+  @keyframes fadeIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .delay-1 { animation-delay: 0.1s; }
+  .delay-2 { animation-delay: 0.2s; }
+  .delay-3 { animation-delay: 0.35s; }
+  .delay-4 { animation-delay: 0.5s; }
+
+  @media (max-width: 600px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    .step { grid-template-columns: 1fr; }
+    .step-num { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">// PROJETO-ANTIVIRUS</div>
+  <ul class="nav-links">
+    <li><a href="#funcionalidades">Funcionalidades</a></li>
+    <li><a href="#como-usar">Como usar</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="https://github.com/Nekas1980/anti-virus-projeto" target="_blank">GitHub ↗</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="status-badge fade-in"><div class="status-dot"></div> SISTEMA OPERACIONAL — v1.0.0</div>
+  <h1 class="fade-in delay-1">Scanner<br><span>Antivírus</span><br>em Python</h1>
+  <p class="fade-in delay-2">Detecção de malware por hash SHA-256, quarentena automática e relatórios JSON. Sem dependências externas.</p>
+  <div class="btn-group fade-in delay-3">
+    <a class="btn-primary" href="https://github.com/Nekas1980/anti-virus-projeto" target="_blank">Ver no GitHub</a>
+    <a class="btn-secondary" href="#como-usar">Como usar</a>
+  </div>
+</section>
+
+<!-- TERMINAL -->
+<div class="terminal-wrap fade-in delay-4">
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+      <span class="terminal-title">powershell — Projeto_virus.py</span>
+    </div>
+    <div class="terminal-body">
+      <div><span class="t-prompt">PS&gt;</span> <span class="t-cmd">python Projeto_virus.py</span></div>
+      <div><span class="t-out">Diretório para escanear: </span><span class="t-cmd">C:\Users\Nelson\Desktop</span></div>
+      <div>&nbsp;</div>
+      <div><span class="t-clean">✓ Arquivos limpos: 142</span></div>
+      <div><span class="t-infected">✗ Arquivos infectados: 1</span></div>
+      <div>&nbsp;</div>
+      <div><span class="t-infected">[INFECTADO]</span> <span class="t-out">malware_sample.exe</span></div>
+      <div><span class="t-out">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ Trojan.Backdoor.Sim</span></div>
+      <div>&nbsp;</div>
+      <div><span class="t-warn">Mover para quarentena? (s/n): s</span></div>
+      <div><span class="t-done">✓ Quarentena concluída.</span></div>
+      <div><span class="t-out">Relatório guardado em </span><span class="t-cmd">output/scan_report.json</span></div>
+      <div>&nbsp;</div>
+      <div><span class="t-prompt">PS&gt;</span> <span class="cursor"></span></div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- FEATURES -->
+<section class="section" id="funcionalidades">
+  <div class="section-label">// 01 — FUNCIONALIDADES</div>
+  <h2 class="section-title">O que faz<br>o scanner</h2>
+  <div class="features-grid">
+    <div class="feature">
+      <div class="feature-num">F-001</div>
+      <h3>Detecção SHA-256</h3>
+      <p>Calcula a impressão digital única de cada ficheiro e compara com a base de assinaturas de malware.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">F-002</div>
+      <h3>Scan Recursivo</h3>
+      <p>Analisa pastas e todas as subpastas em profundidade com um único comando.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">F-003</div>
+      <h3>Quarentena Automática</h3>
+      <p>Move ficheiros infectados para uma pasta isolada sem apagar, preservando evidências.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">F-004</div>
+      <h3>Relatório JSON</h3>
+      <p>Gera relatório completo com status, hash SHA-256 e nome da ameaça de cada ficheiro.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">F-005</div>
+      <h3>Zero Dependências</h3>
+      <p>Usa apenas bibliotecas nativas do Python. Sem instalação de pacotes externos.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-num">F-006</div>
+      <h3>Open Source</h3>
+      <p>Código aberto e livre para usar, modificar e contribuir. Licença MIT.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- HOW TO USE -->
+<section class="section" id="como-usar">
+  <div class="section-label">// 02 — INSTALAÇÃO</div>
+  <h2 class="section-title">Como usar</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div>
+        <h3>Pré-requisitos</h3>
+        <p>Precisas de <span class="code-inline">Python 3.8+</span> instalado. Sem bibliotecas externas necessárias.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div>
+        <h3>Clonar o repositório</h3>
+        <p><span class="code-inline">git clone https://github.com/Nekas1980/anti-virus-projeto.git</span></p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div>
+        <h3>Adicionar assinaturas</h3>
+        <p>Coloca o ficheiro <span class="code-inline">assinaturas.json</span> com os hashes de malware na pasta do projeto.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div>
+        <h3>Correr o scanner</h3>
+        <p><span class="code-inline">python Projeto_virus.py</span> — indica o diretório e o scanner faz o resto.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ROADMAP -->
+<section class="section" id="roadmap">
+  <div class="section-label">// 03 — ROADMAP</div>
+  <h2 class="section-title">Próximos<br>passos</h2>
+  <div class="roadmap">
+    <div class="roadmap-item done">
+      <span class="tag">FEITO</span>
+      <span>Scanner por hash SHA-256</span>
+    </div>
+    <div class="roadmap-item done">
+      <span class="tag">FEITO</span>
+      <span>Quarentena de ficheiros infectados</span>
+    </div>
+    <div class="roadmap-item done">
+      <span class="tag">FEITO</span>
+      <span>Relatório JSON automático</span>
+    </div>
+    <div class="roadmap-item pending">
+      <span class="tag">EM BREVE</span>
+      <span>Interface gráfica (GUI)</span>
+    </div>
+    <div class="roadmap-item pending">
+      <span class="tag">EM BREVE</span>
+      <span>Actualização automática de assinaturas</span>
+    </div>
+    <div class="roadmap-item pending">
+      <span class="tag">EM BREVE</span>
+      <span>Integração com API VirusTotal</span>
+    </div>
+    <div class="roadmap-item pending">
+      <span class="tag">FUTURO</span>
+      <span>Scan em tempo real com monitorização de pastas</span>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">// PROJETO-ANTIVIRUS</div>
+  <p>
+    Desenvolvido por <a href="https://github.com/Nekas1980" target="_blank">Nelson M Madeira Rijo</a><br>
+    Python Bootcamp — IEFP 2026 · Transição para Cibersegurança 🔐<br><br>
+    <a href="https://github.com/Nekas1980/anti-virus-projeto" target="_blank">GitHub</a> &nbsp;·&nbsp;
+    <a href="https://github.com/Nekas1980/anti-virus-projeto/blob/main/README.md" target="_blank">Documentação</a>
+  </p>
+</footer>
+
+</body>
+</html>
