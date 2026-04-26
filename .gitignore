@@ -39,3 +39,8 @@ scan_report.json
 # Dados sensíveis
 *.db
 *.sqlite
+
+# MkDocs
+site/
+.cache/
+.ruff_cache/
