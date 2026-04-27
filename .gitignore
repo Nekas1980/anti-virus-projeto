@@ -44,3 +44,6 @@ scan_report.json
 site/
 .cache/
 .ruff_cache/
+
+# Planos locais
+REDESIGN_PLAN.md
