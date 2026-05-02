@@ -1,177 +1,131 @@
 """
-Gerador de Relatórios Avançados
+Gerador de Relatórios — Fase 3 do plano de melhorias.
 
-Gera relatórios em HTML, JSON e opcionalmente PDF.
+Suporta saída em HTML (com gráficos Chart.js), JSON e Excel (.xlsx). O template
+HTML é externalizado em ``templates/report.html`` e ``templates/report.css``
+para permitir customização sem mexer em código Python.
+
+A classe ``ReportMetadata`` opcional acrescenta scan_id, timestamps, paths e
+taxa de scan. Compatibilidade reversa: se ``metadata=None`` for passado,
+todos os relatórios continuam a funcionar com valores derivados.
 """
+from __future__ import annotations
 
 import json
+import logging
+import os
+import time
+import uuid
+from collections import Counter
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict
+from string import Template
+from typing import Iterable, List, Optional, Sequence
+
 from Virus_project import ScanResult
+
+logger = logging.getLogger(__name__)
+
+TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
+HTML_TEMPLATE_PATH = TEMPLATES_DIR / "report.html"
+CSS_TEMPLATE_PATH = TEMPLATES_DIR / "report.css"
+
+
+@dataclass
+class ReportMetadata:
+    """Contexto opcional sobre a sessão de scan que originou os resultados."""
+
+    scan_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    started_at: float = field(default_factory=time.time)
+    finished_at: Optional[float] = None
+    paths: List[str] = field(default_factory=list)
+
+    @property
+    def duration_seconds(self) -> float:
+        end = self.finished_at if self.finished_at is not None else time.time()
+        return max(0.0, end - self.started_at)
+
+    def scan_rate(self, total_files: int) -> float:
+        d = self.duration_seconds
+        return (total_files / d) if d > 0 else 0.0
+
+    @property
+    def started_iso(self) -> str:
+        return datetime.fromtimestamp(self.started_at).strftime("%d/%m/%Y %H:%M:%S")
+
+    def to_dict(self) -> dict:
+        return {
+            "scan_id": self.scan_id,
+            "started_at": self.started_at,
+            "started_iso": self.started_iso,
+            "finished_at": self.finished_at,
+            "duration_seconds": round(self.duration_seconds, 3),
+            "paths": list(self.paths),
+        }
+
+
+def _format_duration(seconds: float) -> str:
+    if seconds < 1:
+        return f"{seconds * 1000:.0f} ms"
+    if seconds < 60:
+        return f"{seconds:.1f} s"
+    minutes, secs = divmod(seconds, 60)
+    return f"{int(minutes)}m {secs:.0f}s"
+
+
+def _classify_risk(infected: int, total: int) -> tuple[str, str, str]:
+    """Devolve (label, css_class, mensagem)."""
+    if total == 0:
+        return ("SEM DADOS", "warn", "Nenhum ficheiro foi analisado neste scan.")
+    if infected == 0:
+        return (
+            "SEGURO",
+            "safe",
+            "Nenhuma ameaça detectada. Sistema considerado limpo neste scan.",
+        )
+    if infected < 5:
+        return (
+            "ATENÇÃO",
+            "warn",
+            f"Foram detectadas {infected} ameaça(s). Recomenda-se quarentena imediata "
+            "e investigação da origem dos ficheiros afectados.",
+        )
+    return (
+        "RISCO ELEVADO",
+        "danger",
+        f"Foram detectadas {infected} ameaças. Acção urgente: quarentena, "
+        "verificação de outras máquinas na rede e revisão de pontos de entrada.",
+    )
+
+
+def _top_infected_dirs(results: Sequence[ScanResult], limit: int = 10) -> List[tuple[str, int]]:
+    counter: Counter[str] = Counter()
+    for r in results:
+        if r.status != "infected":
+            continue
+        try:
+            parent = str(Path(r.file_path).parent)
+        except (TypeError, ValueError):
+            parent = "(desconhecido)"
+        counter[parent] += 1
+    return counter.most_common(limit)
+
+
+def _truncate(value: str, length: int) -> str:
+    return value if len(value) <= length else value[: length - 1] + "…"
+
+
+def _read_template(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except (OSError, IOError) as e:
+        logger.error(f"Erro ao ler template {path}: {e}")
+        raise
 
 
 class HTMLReportGenerator:
-    """Gera relatórios em formato HTML."""
-
-    HTML_TEMPLATE = """<!DOCTYPE html>
-<html lang="pt-PT">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatório de Varredura - Antivírus</title>
-    <style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-        body {{
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
-            color: #333;
-        }}
-        .container {{
-            max-width: 1000px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            overflow: hidden;
-        }}
-        header {{
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }}
-        header h1 {{
-            font-size: 28px;
-            margin-bottom: 5px;
-        }}
-        header p {{
-            font-size: 14px;
-            opacity: 0.9;
-        }}
-        .stats {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            padding: 30px;
-            background: #f5f5f5;
-        }}
-        .stat-card {{
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }}
-        .stat-label {{
-            font-size: 12px;
-            color: #666;
-            text-transform: uppercase;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }}
-        .stat-value {{
-            font-size: 32px;
-            font-weight: bold;
-            color: #333;
-        }}
-        .stat-value.clean {{ color: #4caf50; }}
-        .stat-value.infected {{ color: #f44336; }}
-        .stat-value.skipped {{ color: #ff9800; }}
-        .content {{
-            padding: 30px;
-        }}
-        table {{
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }}
-        th {{
-            background: #f5f5f5;
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-            border-bottom: 2px solid #ddd;
-        }}
-        td {{
-            padding: 12px;
-            border-bottom: 1px solid #eee;
-        }}
-        tr:hover {{
-            background: #f9f9f9;
-        }}
-        .status {{
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-            text-align: center;
-        }}
-        .status.clean {{
-            background: #c8e6c9;
-            color: #2e7d32;
-        }}
-        .status.infected {{
-            background: #ffcdd2;
-            color: #c62828;
-        }}
-        .status.skip {{
-            background: #ffe0b2;
-            color: #e65100;
-        }}
-        .threat {{ color: #f44336; font-weight: 600; }}
-        .hash {{ font-family: 'Courier New', monospace; font-size: 11px; }}
-        footer {{
-            background: #f5f5f5;
-            padding: 20px;
-            text-align: center;
-            color: #666;
-            font-size: 12px;
-            border-top: 1px solid #ddd;
-        }}
-        @media print {{
-            body {{ background: white; }}
-            .container {{ box-shadow: none; }}
-        }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>🛡️ Relatório de Varredura</h1>
-            <p>Antivírus Projeto v1.0 | {scan_date}</p>
-        </header>
-
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-label">Total Analisado</div>
-                <div class="stat-value">{total}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Ficheiros Limpos</div>
-                <div class="stat-value clean">{clean}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Infectados</div>
-                <div class="stat-value infected">{infected}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Ignorados</div>
-                <div class="stat-value skipped">{skipped}</div>
-            </div>
-        </div>
-
-        <div class="content">
-            {threat_section}
-            {summary_section}
-        </div>
-
-        <footer>
-            <p>© 2024 Antivírus Projeto | Relatório gerado automaticamente</p>
-        </footer>
-    </div>
-</body>
-</html>"""
+    """Gera relatórios HTML auto-contidos com gráficos Chart.js."""
 
     THREAT_TABLE = """
             <h2>⚠️ Ameaças Detectadas</h2>
@@ -184,15 +138,17 @@ class HTMLReportGenerator:
                     </tr>
                 </thead>
                 <tbody>
-                    {threat_rows}
+{rows}
                 </tbody>
             </table>"""
 
-    THREAT_ROW = """<tr>
-                        <td>{file_path}</td>
-                        <td><span class="threat">{reason}</span></td>
-                        <td><span class="hash">{sha256}</span></td>
-                    </tr>"""
+    THREAT_ROW = (
+        "                    <tr>\n"
+        "                        <td>{file_path}</td>\n"
+        "                        <td><span class=\"threat\">{reason}</span></td>\n"
+        "                        <td><span class=\"hash\">{sha256}</span></td>\n"
+        "                    </tr>"
+    )
 
     SUMMARY_TABLE = """
             <h2>📊 Resumo Detalhado</h2>
@@ -205,84 +161,126 @@ class HTMLReportGenerator:
                     </tr>
                 </thead>
                 <tbody>
-                    {summary_rows}
+{rows}
                 </tbody>
             </table>"""
 
-    SUMMARY_ROW = """<tr>
-                        <td>{file_path}</td>
-                        <td><span class="status {status_class}">{status}</span></td>
-                        <td><span class="hash">{sha256}</span></td>
-                    </tr>"""
+    SUMMARY_ROW = (
+        "                    <tr>\n"
+        "                        <td>{file_path}</td>\n"
+        "                        <td><span class=\"status {status_class}\">{status}</span></td>\n"
+        "                        <td><span class=\"hash\">{sha256}</span></td>\n"
+        "                    </tr>"
+    )
 
-    @staticmethod
+    @classmethod
     def generate(
+        cls,
         results: List[ScanResult],
         output_file: Path = Path("output/scan_report.html"),
         include_summary: bool = True,
+        metadata: Optional[ReportMetadata] = None,
+        summary_limit: int = 50,
     ) -> bool:
-        """Gera relatório HTML."""
+        """Gera relatório HTML. Retorna True se sucesso."""
         try:
+            meta = metadata or ReportMetadata(finished_at=time.time())
             infected = [r for r in results if r.status == "infected"]
             clean = [r for r in results if r.status == "clean"]
             skipped = [r for r in results if r.status == "skip"]
 
-            threat_rows = ""
-            for item in infected:
-                threat_rows += HTMLReportGenerator.THREAT_ROW.format(
-                    file_path=item.file_path,
-                    reason=item.reason,
-                    sha256=item.sha256[:32] + "..." if len(item.sha256) > 32 else item.sha256,
-                )
-
             threat_section = ""
             if infected:
-                threat_section = HTMLReportGenerator.THREAT_TABLE.format(threat_rows=threat_rows)
+                rows = "\n".join(
+                    cls.THREAT_ROW.format(
+                        file_path=_truncate(r.file_path, 90),
+                        reason=r.reason or "(desconhecido)",
+                        sha256=(r.sha256[:32] + "…") if len(r.sha256) > 32 else (r.sha256 or "—"),
+                    )
+                    for r in infected
+                )
+                threat_section = cls.THREAT_TABLE.format(rows=rows)
 
             summary_section = ""
-            if include_summary:
-                summary_rows = ""
-                for item in results[:50]:
-                    status_class = "clean" if item.status == "clean" else ("infected" if item.status == "infected" else "skip")
-                    summary_rows += HTMLReportGenerator.SUMMARY_ROW.format(
-                        file_path=item.file_path,
-                        status=item.status.upper(),
-                        status_class=status_class,
-                        sha256=item.sha256[:24] + "..." if item.sha256 else "N/A",
+            if include_summary and results:
+                shown = results[:summary_limit]
+                rows = "\n".join(
+                    cls.SUMMARY_ROW.format(
+                        file_path=_truncate(r.file_path, 90),
+                        status=r.status.upper(),
+                        status_class=r.status,
+                        sha256=(r.sha256[:24] + "…") if r.sha256 else "N/A",
                     )
-
-                summary_section = HTMLReportGenerator.SUMMARY_TABLE.format(
-                    summary_rows=summary_rows + (f"<tr><td colspan='3' style='text-align: center; color: #999;'>{len(results) - 50} mais resultados...</td></tr>" if len(results) > 50 else "")
+                    for r in shown
                 )
+                if len(results) > summary_limit:
+                    extra = len(results) - summary_limit
+                    rows += (
+                        "\n                    <tr><td colspan='3' style='text-align:center;color:#999;'>"
+                        f"+ {extra} resultados não listados (ver JSON/Excel)"
+                        "</td></tr>"
+                    )
+                summary_section = cls.SUMMARY_TABLE.format(rows=rows)
 
-            html = HTMLReportGenerator.HTML_TEMPLATE.format(
+            risk_label, risk_class, exec_summary = _classify_risk(len(infected), len(results))
+
+            top_dirs = _top_infected_dirs(infected)
+            dirs_data = {
+                "labels": [_truncate(d, 40) for d, _ in top_dirs],
+                "values": [n for _, n in top_dirs],
+                "dataset_label": "Ameaças por diretório",
+            }
+            status_data = {
+                "labels": ["Limpos", "Infectados", "Ignorados"],
+                "values": [len(clean), len(infected), len(skipped)],
+            }
+
+            css = _read_template(CSS_TEMPLATE_PATH)
+            template = Template(_read_template(HTML_TEMPLATE_PATH))
+
+            html = template.safe_substitute(
+                css=css,
                 scan_date=datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                scan_id=meta.scan_id,
+                started_at=meta.started_iso,
+                duration=_format_duration(meta.duration_seconds),
+                scan_rate=f"{meta.scan_rate(len(results)):.1f} ficheiros/s",
+                paths=" · ".join(meta.paths) if meta.paths else "(não especificado)",
                 total=len(results),
                 clean=len(clean),
                 infected=len(infected),
                 skipped=len(skipped),
+                risk_class=risk_class,
+                risk_label=risk_label,
+                exec_summary=exec_summary,
+                dirs_chart_title=(
+                    "Top diretórios com ameaças" if top_dirs else "Diretórios afectados"
+                ),
                 threat_section=threat_section,
                 summary_section=summary_section,
+                status_data_json=json.dumps(status_data, ensure_ascii=False),
+                dirs_data_json=json.dumps(dirs_data, ensure_ascii=False),
             )
 
             output_file.parent.mkdir(parents=True, exist_ok=True)
-            with output_file.open("w", encoding="utf-8") as f:
-                f.write(html)
-
+            output_file.write_text(html, encoding="utf-8")
+            logger.info(f"Relatório HTML gerado em {output_file}")
             return True
         except Exception as e:
-            print(f"Erro ao gerar relatório HTML: {e}")
+            logger.error(f"Erro ao gerar relatório HTML: {e}")
             return False
 
 
 def generate_json_report(
     results: List[ScanResult],
     output_file: Path = Path("output/scan_report.json"),
+    metadata: Optional[ReportMetadata] = None,
 ) -> bool:
-    """Gera relatório JSON."""
+    """Gera relatório JSON. Inclui metadata e contagens se ``metadata`` fornecida."""
     try:
         output_file.parent.mkdir(parents=True, exist_ok=True)
-        payload = [
+
+        items = [
             {
                 "file_path": r.file_path,
                 "status": r.status,
@@ -291,9 +289,26 @@ def generate_json_report(
             }
             for r in results
         ]
+
+        if metadata is None:
+            payload: object = items
+        else:
+            counts = Counter(r.status for r in results)
+            payload = {
+                "metadata": metadata.to_dict(),
+                "counts": {
+                    "total": len(results),
+                    "clean": counts.get("clean", 0),
+                    "infected": counts.get("infected", 0),
+                    "skipped": counts.get("skip", 0),
+                },
+                "results": items,
+            }
+
         with output_file.open("w", encoding="utf-8") as f:
             json.dump(payload, f, indent=2, ensure_ascii=False)
+        logger.info(f"Relatório JSON gerado em {output_file}")
         return True
-    except Exception as e:
-        print(f"Erro ao gerar relatório JSON: {e}")
+    except (OSError, IOError, TypeError) as e:
+        logger.error(f"Erro ao gerar relatório JSON: {e}")
         return False

@@ -3,17 +3,22 @@ import hashlib
 import json
 import shutil
 import logging
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
-import fnmatch
 
-BUFFER_SIZE = 1024 * 1024
-LOG_FILE = "scan.log"
+from config import LOG, PATHS, SCAN
+from exclusion_matcher import ExclusionMatcher
+from hash_cache import HashCache
+
+BUFFER_SIZE = SCAN["buffer_size"]
+LOG_FILE = str(PATHS["log_file"])
+DEFAULT_FILE_TIMEOUT = SCAN["file_timeout_seconds"]
 
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
+    level=getattr(logging, LOG["level"]),
+    format=LOG["format"],
     handlers=[
         logging.FileHandler(LOG_FILE),
         logging.StreamHandler(),
@@ -28,16 +33,23 @@ class ScanResult:
     reason: str = ""
     sha256: str = ""
 
-def sha256_file(file_path: Path) -> Optional[str]:
-    """Calcula o hash SHA256 de um ficheiro. Retorna None em caso de erro."""
+def sha256_file(file_path: Path, timeout: Optional[float] = None) -> Optional[str]:
+    """Calcula o hash SHA256 de um ficheiro.
+
+    Retorna None em caso de erro de I/O, ou se exceder o timeout em segundos.
+    """
     try:
         h = hashlib.sha256()
+        start = time.monotonic()
         with file_path.open("rb") as f:
             while True:
                 chunk = f.read(BUFFER_SIZE)
                 if not chunk:
                     break
                 h.update(chunk)
+                if timeout is not None and (time.monotonic() - start) > timeout:
+                    logger.warning(f"Timeout ao ler {file_path} (>{timeout}s)")
+                    return None
         return h.hexdigest()
     except (IOError, OSError) as e:
         logger.warning(f"Erro ao ler {file_path}: {e}")
@@ -109,21 +121,33 @@ def get_default_exclusions() -> List[str]:
     ]
 
 def should_skip_path(path: Path, exclusion_patterns: List[str]) -> bool:
-    """Verifica se um caminho deve ser ignorado baseado nos padrões de exclusão."""
-    path_str = str(path)
-    for pattern in exclusion_patterns:
-        if fnmatch.fnmatch(path_str, f"*{pattern}*") or fnmatch.fnmatch(path.name, pattern):
-            return True
-    return False
+    """Verifica se um caminho deve ser ignorado baseado nos padrões de exclusão.
 
-def scan_file(file_path: Path, signatures: Dict[str, str]) -> ScanResult:
+    Para varreduras grandes, prefira `ExclusionMatcher` directamente para
+    evitar recompilar regex a cada chamada.
+    """
+    return ExclusionMatcher(exclusion_patterns).matches(path)
+
+def scan_file(
+    file_path: Path,
+    signatures: Dict[str, str],
+    cache: Optional["HashCache"] = None,
+    timeout: Optional[float] = DEFAULT_FILE_TIMEOUT,
+) -> ScanResult:
     """Analisa um ficheiro individual contra as assinaturas de malware."""
     if not file_path.is_file():
         return ScanResult(file_path=str(file_path), status="skip", reason="não é ficheiro")
 
-    digest = sha256_file(file_path)
+    digest: Optional[str] = None
+    if cache is not None:
+        digest = cache.get(file_path)
+
     if digest is None:
-        return ScanResult(file_path=str(file_path), status="skip", reason="erro ao ler ficheiro")
+        digest = sha256_file(file_path, timeout=timeout)
+        if digest is None:
+            return ScanResult(file_path=str(file_path), status="skip", reason="erro ou timeout")
+        if cache is not None:
+            cache.set(file_path, digest)
 
     threat_name = signatures.get(digest)
     if threat_name:
@@ -140,16 +164,22 @@ def scan_file(file_path: Path, signatures: Dict[str, str]) -> ScanResult:
         sha256=digest,
     )
 
-def scan_directory(root: Path, signatures: Dict[str, str], exclusions: List[str]) -> List[ScanResult]:
+def scan_directory(
+    root: Path,
+    signatures: Dict[str, str],
+    exclusions: List[str],
+    cache: Optional["HashCache"] = None,
+) -> List[ScanResult]:
     """Varre recursivamente um diretório e retorna os resultados, respeitando exclusões."""
+    matcher = ExclusionMatcher(exclusions)
     results: List[ScanResult] = []
     try:
         for path in root.rglob("*"):
-            if should_skip_path(path, exclusions):
+            if matcher.matches(path):
                 logger.debug(f"Ignorando (exclusão): {path}")
                 continue
             if path.is_file():
-                results.append(scan_file(path, signatures))
+                results.append(scan_file(path, signatures, cache=cache))
     except (IOError, OSError) as e:
         logger.error(f"Erro ao varrer diretório {root}: {e}")
     return results
@@ -202,14 +232,21 @@ def main() -> None:
         print("Diretório inválido.")
         return
 
-    signatures = load_signatures(Path("signatures.json"))
+    signatures = load_signatures(PATHS["signatures"])
     if not signatures:
         logger.warning("Nenhuma assinatura carregada!")
 
-    exclusions = load_exclusions(Path("exclusions.json"))
+    exclusions = load_exclusions(PATHS["exclusions"])
     logger.info(f"Usando {len(exclusions)} padrões de exclusão")
 
-    results = scan_directory(target_dir, signatures, exclusions)
+    cache = HashCache(PATHS["scan_cache"]) if SCAN["cache_enabled"] else None
+
+    try:
+        results = scan_directory(target_dir, signatures, exclusions, cache=cache)
+    finally:
+        if cache is not None:
+            cache.close()
+
     infected = [r for r in results if r.status == "infected"]
     clean = [r for r in results if r.status == "clean"]
 
@@ -219,13 +256,14 @@ def main() -> None:
     for item in infected:
         print(f"[INFECTADO] {item.file_path} -> {item.reason}")
 
-    if save_report(results, Path("output/scan_report.json")):
-        print(f"Relatório salvo em output/scan_report.json")
+    report_path = PATHS["output_dir"] / "scan_report.json"
+    if save_report(results, report_path):
+        print(f"Relatório salvo em {report_path}")
 
     if infected:
         choice = input("\nMover infectados para quarentena? (s/n): ").strip().lower()
         if choice == "s":
-            quarantine_dir = Path("quarantine")
+            quarantine_dir = PATHS["quarantine_dir"]
             quarantined = 0
             for item in infected:
                 if quarantine_file(Path(item.file_path), quarantine_dir):

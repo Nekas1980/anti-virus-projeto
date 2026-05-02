@@ -22,6 +22,7 @@ a = Analysis(
     datas=[
         (str(project_root / "signatures.json"), "."),
         (str(project_root / "exclusions.json"), "."),
+        (str(project_root / "templates"), "templates"),
     ],
     hiddenimports=[
         "colorama",

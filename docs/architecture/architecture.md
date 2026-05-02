@@ -19,47 +19,117 @@ This project teaches fundamental cybersecurity concepts through a **signature-ba
 
 ## 🏛️ High-Level Architecture
 
+### Camadas e dependências
+
+```mermaid
+flowchart TB
+    subgraph UI["UI Layer"]
+        GUI[gui.py · CustomTkinter<br/>tabs · filtros · pause/resume]
+        CLI[Virus_project.main · CLI]
+        WEB[web_api.py · FastAPI opcional]
+    end
+
+    subgraph ENGINE["Scanning Engine"]
+        VP[Virus_project.py<br/>scan_file · scan_directory · sha256_file]
+    end
+
+    subgraph SUPPORT["Suporte"]
+        HC[hash_cache.py<br/>SQLite WAL]
+        EM[exclusion_matcher.py<br/>regex pré-compiladas]
+        SH[scan_history.py]
+        UP[user_prefs.py]
+        VT[virustotal_updater.py]
+        VTC[vt_cache.py]
+        RL[rate_limiter.py]
+        NF[notifications.py]
+        RG[report_generator.py<br/>HTML + Chart.js]
+        EX[excel_exporter.py<br/>openpyxl]
+        SCH[scheduler.py]
+    end
+
+    subgraph DATA["Data & Config"]
+        SIG[(signatures.json)]
+        EXJ[(exclusions.json)]
+        SCC[(.scan_cache.db)]
+        VCC[(.vt_cache.db)]
+        SHC[(.scan_history.db)]
+        OUT[/output/*.html/json/xlsx/]
+        QR[/quarantine/]
+    end
+
+    UI --> VP
+    VP --> EM
+    VP --> HC
+    HC --> SCC
+    VP --> SIG
+    EM --> EXJ
+    UI --> RG
+    UI --> EX
+    UI --> SH
+    SH --> SHC
+    UI --> UP
+    UI --> NF
+    SCH --> VP
+    VT --> VTC
+    VTC --> VCC
+    VT --> RL
+    VT --> SIG
+    RG --> OUT
+    EX --> OUT
+    VP --> QR
+    WEB --> VP
+    WEB --> SH
+    WEB --> RG
+    WEB --> EX
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      User Interface Layer                    │
-├─────────────────────────────────────────────────────────────┤
-│  gui.py (Tkinter)  │  CLI (Virus_project.py)  │  Web (TBD) │
-└──────────┬──────────────────────┬──────────────────────────┘
-           │                      │
-           └──────────┬───────────┘
-                      │
-┌─────────────────────┴────────────────────────────────────────┐
-│              Scanning Engine Layer                            │
-├──────────────────────────────────────────────────────────────┤
-│ Virus_project.py:                                            │
-│  • scan_file(file, signatures) → ScanResult                 │
-│  • scan_directory(path, signatures, exclusions)             │
-│  • sha256_file(path) → hash                                 │
-│  • load_signatures(json_file) → Dict[hash, name]            │
-│  • load_exclusions(json_file) → List[patterns]              │
-│  • should_skip_path(path, patterns) → bool                  │
-└──────────┬──────────────────────────────────────────────────┘
-           │
-┌──────────┴──────────────────────────────────────────────────┐
-│            Support & Integration Layer                       │
-├──────────────────────────────────────────────────────────────┤
-│ • virustotal_updater.py   (API integration)                 │
-│ • scheduler.py            (Task scheduling)                 │
-│ • report_generator.py     (Output generation)               │
-│ • logging module          (Audit trail)                     │
-└──────────┬──────────────────────────────────────────────────┘
-           │
-┌──────────┴──────────────────────────────────────────────────┐
-│              Data & Configuration Layer                      │
-├──────────────────────────────────────────────────────────────┤
-│ JSON Files:                                                  │
-│  • signatures.json   (known malware hashes)                 │
-│  • exclusions.json   (directory patterns to skip)           │
-│  • schedule_config.json (scheduled scan config)             │
-│ Directories:                                                 │
-│  • quarantine/      (isolated infected files)               │
-│  • output/          (generated reports)                     │
-└──────────────────────────────────────────────────────────────┘
+
+### Fluxo de um scan (sequence)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User
+    participant UI as GUI / CLI / API
+    participant Engine as Virus_project
+    participant Cache as HashCache
+    participant Matcher as ExclusionMatcher
+    participant Sigs as signatures.json
+    participant History as ScanHistory
+    participant Report as report_generator
+
+    User->>UI: Inicia scan(path)
+    UI->>Engine: load_signatures()
+    Engine->>Sigs: read JSON
+    UI->>Engine: load_exclusions()
+    UI->>Matcher: compile patterns (1×)
+    UI->>Engine: scan_directory(path)
+
+    loop por cada ficheiro
+        Engine->>Matcher: matches(path)?
+        alt excluído
+            Matcher-->>Engine: True
+            Note over Engine: skip
+        else
+            Matcher-->>Engine: False
+            Engine->>Cache: get(path)
+            alt cache hit (mtime+size iguais)
+                Cache-->>Engine: hash em cache
+            else miss
+                Engine->>Engine: sha256_file (com timeout)
+                Engine->>Cache: set(path, hash)
+            end
+            Engine->>Sigs: hash em assinaturas?
+            alt match
+                Engine-->>UI: ScanResult(infected, threat)
+            else
+                Engine-->>UI: ScanResult(clean)
+            end
+        end
+    end
+
+    UI->>Report: HTMLReportGenerator.generate(results, metadata)
+    UI->>History: record(totals, paths, started_at)
+    UI-->>User: Resumo + botão de exportação
 ```
 
 ---

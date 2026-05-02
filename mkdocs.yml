@@ -1,5 +1,5 @@
-site_name: Cyber-Sentinel 🛡️
-site_description: Educational malware detection engine demonstrating cybersecurity fundamentals
+site_name: Antivírus Projeto
+site_description: Motor educacional de deteção de malware — IEFP Cybersecurity Bootcamp
 site_author: Nelson M Madeira Rijo
 site_url: https://nekas1980.github.io/anti-virus-projeto/
 repo_url: https://github.com/Nekas1980/anti-virus-projeto
@@ -8,54 +8,122 @@ edit_uri: edit/main/docs/
 
 theme:
   name: material
+  language: pt
   palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Mudar para tema escuro
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: teal
       accent: cyan
       toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: teal
-      accent: cyan
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
+        icon: material/weather-sunny
+        name: Mudar para tema claro
   features:
     - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - navigation.tracking
     - search.suggest
     - search.highlight
+    - search.share
     - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
 
 extra_css:
   - stylesheets/extra.css
 
+plugins:
+  - search:
+      lang:
+        - pt
+        - en
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: ["."]
+          options:
+            show_source: false
+            show_root_heading: true
+            show_root_toc_entry: false
+            heading_level: 3
+            members_order: source
+            docstring_style: google
+            docstring_section_style: spacy
+            merge_init_into_class: true
+            separate_signature: true
+            show_signature_annotations: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+
 markdown_extensions:
-  - pymdownx.highlight:
-      use_pygments: true
-  - pymdownx.superfences
-  - pymdownx.tabbed:
-      alternate_style: true
   - admonition
-  - tables
   - attr_list
+  - def_list
+  - footnotes
   - md_in_html
+  - tables
   - toc:
       permalink: true
+      title: Nesta página
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      use_pygments: true
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Nekas1980
+  generator: false
+
+extra_javascript:
+  - https://unpkg.com/mermaid@10/dist/mermaid.min.js
 
 nav:
-  - Home: index.md
+  - Início: index.md
   - Guias:
     - Instalação: guides/installation.md
     - Início Rápido: guides/quickstart.md
     - Funcionamento: guides/how-it-works.md
-  - Documentação:
-    - Arquitetura: architecture/architecture.md
+    - Troubleshooting: guides/troubleshooting.md
+    - FAQ: guides/faq.md
+  - Arquitetura:
+    - Visão Geral: architecture/architecture.md
     - Desenvolvimento: architecture/development.md
     - Build: architecture/build.md
+  - API Reference:
+    - Geral: api/reference.md
+    - Engine: api/engine.md
+    - Suporte: api/support.md
+    - Web API: api/web.md
   - Contribuir:
     - Diretrizes: contribute/guidelines.md
     - Estrutura: contribute/structure.md

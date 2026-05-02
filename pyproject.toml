@@ -42,11 +42,15 @@ dependencies = [
 
 [project.optional-dependencies]
 gui = ["customtkinter>=5.0"]
+notifications = ["plyer>=2.1"]
+excel = ["openpyxl>=3.1"]
+api = ["fastapi>=0.110", "uvicorn>=0.27", "httpx>=0.27"]
 dev = [
-    "pytest>=7.0",
-    "pytest-cov>=4.0",
+    "coverage[toml]>=7.0",
     "black>=22.0",
     "flake8>=5.0",
+    "bandit[toml]>=1.7",
+    "safety>=3.0",
     "mypy>=0.990",
 ]
 
@@ -74,6 +78,37 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
 
-[tool.pytest.ini_options]
-testpaths = ["test_virus_project.py"]
-addopts = "-v --tb=short"
+[tool.coverage.run]
+branch = true
+source = ["."]
+omit = [
+    "test_*.py",
+    "setup.py",
+    "main.py",
+    "gui.py",
+    "web_api.py",
+    "build_exe.spec",
+    "venv/*",
+    ".venv/*",
+    "site/*",
+    "output/*",
+    "docs/*",
+    "quarantine/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "raise SystemExit",
+]
+fail_under = 80
+show_missing = true
+precision = 1
+
+[tool.bandit]
+exclude_dirs = ["test_*", "venv", ".venv", "site", "output", "quarantine", "__pycache__"]
+skips = ["B101"]  # assert_used (tests usam assert)

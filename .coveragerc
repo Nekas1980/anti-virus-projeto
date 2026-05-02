@@ -1,0 +1,37 @@
+[run]
+branch = True
+source = .
+omit =
+    test_*.py
+    setup.py
+    main.py
+    gui.py
+    web_api.py
+    build_exe.spec
+    venv/*
+    .venv/*
+    site/*
+    output/*
+    docs/*
+    quarantine/*
+    __pycache__/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    raise SystemExit
+    pass
+fail_under = 80
+show_missing = True
+skip_covered = False
+precision = 1
+
+[html]
+directory = htmlcov
+
+[xml]
+output = coverage.xml

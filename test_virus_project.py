@@ -17,6 +17,7 @@ from Virus_project import (
     add_signature,
     ScanResult,
 )
+from hash_cache import HashCache
 
 
 class TestSHA256File(unittest.TestCase):
@@ -220,6 +221,53 @@ class TestScanResult(unittest.TestCase):
         result = ScanResult(file_path="/test", status="skip")
         self.assertEqual(result.reason, "")
         self.assertEqual(result.sha256, "")
+
+
+class TestScanFileWithCache(unittest.TestCase):
+    """Testa integração de scan_file com HashCache."""
+
+    def test_cache_avoids_recomputation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "file.bin"
+            target.write_bytes(b"sample content")
+            cache = HashCache(Path(tmp) / "cache.db")
+            try:
+                first = scan_file(target, {}, cache=cache)
+                self.assertEqual(first.status, "clean")
+                cached = cache.get(target)
+                self.assertEqual(cached, first.sha256)
+
+                cache.set(target, "deadbeef")
+                second = scan_file(target, {"deadbeef": "FakeMalware"}, cache=cache)
+                self.assertEqual(second.status, "infected")
+                self.assertEqual(second.reason, "FakeMalware")
+            finally:
+                cache.close()
+
+
+class TestSha256FileTimeout(unittest.TestCase):
+    """Testa comportamento de timeout em sha256_file."""
+
+    def test_zero_timeout_returns_none(self):
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            tmp.write(b"x" * (2 * 1024 * 1024))
+            tmp_path = Path(tmp.name)
+        try:
+            result = sha256_file(tmp_path, timeout=0.0)
+            self.assertIsNone(result)
+        finally:
+            tmp_path.unlink()
+
+    def test_no_timeout_completes_normally(self):
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            tmp.write(b"small content")
+            tmp_path = Path(tmp.name)
+        try:
+            result = sha256_file(tmp_path, timeout=None)
+            self.assertIsNotNone(result)
+            self.assertEqual(len(result), 64)
+        finally:
+            tmp_path.unlink()
 
 
 def run_tests():

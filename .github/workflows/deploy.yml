@@ -8,6 +8,7 @@ on:
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
+      - '*.py'
       - '.github/workflows/deploy.yml'
   pull_request:
     branches:
@@ -35,9 +36,16 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install MkDocs and theme
+      - name: Install MkDocs, theme and plugins
         run: |
-          pip install mkdocs mkdocs-material mkdocstrings pymdown-extensions
+          pip install \
+            mkdocs \
+            mkdocs-material \
+            "mkdocstrings[python]" \
+            pymdown-extensions
+          # Dependencies dos módulos para mkdocstrings poder importar
+          pip install -r requirements.txt
+          pip install openpyxl fastapi httpx
 
       - name: Build documentation
         run: mkdocs build --strict

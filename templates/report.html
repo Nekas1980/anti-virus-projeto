@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Varredura — Antivírus Projeto</title>
+    <style>${css}</style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛡️ Relatório de Varredura</h1>
+            <p>Antivírus Projeto · Gerado em ${scan_date}</p>
+        </header>
+
+        <section class="metadata">
+            <div class="meta-item">
+                <span class="meta-label">Scan ID</span>
+                <span class="meta-value">${scan_id}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Início</span>
+                <span class="meta-value">${started_at}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Duração</span>
+                <span class="meta-value">${duration}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Taxa</span>
+                <span class="meta-value">${scan_rate}</span>
+            </div>
+            <div class="meta-item" style="grid-column: 1 / -1;">
+                <span class="meta-label">Pastas analisadas</span>
+                <span class="meta-value">${paths}</span>
+            </div>
+        </section>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-label">Total Analisado</div>
+                <div class="stat-value">${total}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Ficheiros Limpos</div>
+                <div class="stat-value clean">${clean}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Infectados</div>
+                <div class="stat-value infected">${infected}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Ignorados</div>
+                <div class="stat-value skipped">${skipped}</div>
+            </div>
+        </div>
+
+        <div class="exec-summary">
+            <h2>📋 Resumo Executivo</h2>
+            <span class="risk ${risk_class}">${risk_label}</span>
+            <p>${exec_summary}</p>
+        </div>
+
+        <div class="charts-row">
+            <div class="chart-card">
+                <h3>Distribuição de resultados</h3>
+                <canvas id="status_chart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>${dirs_chart_title}</h3>
+                <canvas id="dirs_chart"></canvas>
+            </div>
+        </div>
+
+        <div class="content">
+            ${threat_section}
+            ${summary_section}
+        </div>
+
+        <footer>
+            <p>© Antivírus Projeto · IEFP Cybersecurity Bootcamp · MIT License</p>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        const STATUS_DATA = ${status_data_json};
+        const DIRS_DATA = ${dirs_data_json};
+
+        if (window.Chart) {
+            new Chart(document.getElementById('status_chart'), {
+                type: 'doughnut',
+                data: {
+                    labels: STATUS_DATA.labels,
+                    datasets: [{
+                        data: STATUS_DATA.values,
+                        backgroundColor: ['#4caf50', '#f44336', '#ff9800'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            if (DIRS_DATA.labels.length > 0) {
+                new Chart(document.getElementById('dirs_chart'), {
+                    type: 'bar',
+                    data: {
+                        labels: DIRS_DATA.labels,
+                        datasets: [{
+                            label: DIRS_DATA.dataset_label,
+                            data: DIRS_DATA.values,
+                            backgroundColor: '#f44336'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        indexAxis: 'y',
+                        plugins: { legend: { display: false } },
+                        scales: { x: { ticks: { precision: 0 } } }
+                    }
+                });
+            } else {
+                const c = document.getElementById('dirs_chart');
+                const ctx = c.getContext('2d');
+                ctx.font = '14px sans-serif';
+                ctx.fillStyle = '#999';
+                ctx.textAlign = 'center';
+                ctx.fillText('Sem ameaças detectadas — nada a representar.',
+                             c.width / 2, c.height / 2);
+            }
+        }
+    </script>
+</body>
+</html>

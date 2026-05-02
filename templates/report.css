@@ -1,0 +1,195 @@
+/* Antivírus Projeto — Report stylesheet
+   Externalizado de report_generator.py na Fase 3 (3.1).
+   Carregado e embutido no HTML pelo gerador (mantém o ficheiro standalone). */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+    --bg-grad: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --surface: #ffffff;
+    --muted: #f5f5f5;
+    --border: #e0e0e0;
+    --text: #333333;
+    --text-soft: #666666;
+    --clean: #4caf50;
+    --infected: #f44336;
+    --skipped: #ff9800;
+    --warn-bg: #ffcdd2;
+    --warn-fg: #c62828;
+    --ok-bg: #c8e6c9;
+    --ok-fg: #2e7d32;
+    --skip-bg: #ffe0b2;
+    --skip-fg: #e65100;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-grad);
+    padding: 20px;
+    color: var(--text);
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    background: var(--surface);
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    overflow: hidden;
+}
+
+header {
+    background: var(--bg-grad);
+    color: white;
+    padding: 32px;
+    text-align: center;
+}
+
+header h1 { font-size: 28px; margin-bottom: 6px; }
+header p { font-size: 14px; opacity: 0.9; }
+
+.metadata {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    padding: 18px 30px;
+    background: var(--muted);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+}
+.metadata .meta-item { display: flex; flex-direction: column; }
+.metadata .meta-label {
+    text-transform: uppercase;
+    color: var(--text-soft);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    margin-bottom: 2px;
+}
+.metadata .meta-value { font-weight: 600; word-break: break-all; }
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    padding: 24px 30px;
+    background: var(--muted);
+}
+.stat-card {
+    background: var(--surface);
+    padding: 18px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.stat-label {
+    font-size: 11px;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 6px;
+    letter-spacing: 0.05em;
+}
+.stat-value { font-size: 30px; font-weight: bold; }
+.stat-value.clean { color: var(--clean); }
+.stat-value.infected { color: var(--infected); }
+.stat-value.skipped { color: var(--skipped); }
+
+.exec-summary {
+    margin: 24px 30px;
+    padding: 20px;
+    border-left: 4px solid var(--bg-grad);
+    border-radius: 6px;
+    background: linear-gradient(90deg, rgba(102,126,234,0.06), transparent 60%);
+}
+.exec-summary h2 { font-size: 18px; margin-bottom: 8px; }
+.exec-summary .risk {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin: 6px 0;
+}
+.exec-summary .risk.safe { background: var(--ok-bg); color: var(--ok-fg); }
+.exec-summary .risk.warn { background: var(--skip-bg); color: var(--skip-fg); }
+.exec-summary .risk.danger { background: var(--warn-bg); color: var(--warn-fg); }
+.exec-summary p { line-height: 1.55; color: var(--text-soft); }
+
+.charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding: 0 30px 24px;
+}
+.chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+}
+.chart-card h3 {
+    font-size: 14px;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    letter-spacing: 0.05em;
+}
+.chart-card canvas { max-height: 260px; }
+
+.content { padding: 24px 30px 30px; }
+h2 { margin-bottom: 12px; font-size: 20px; }
+
+table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; }
+th {
+    background: var(--muted);
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--border);
+    font-size: 13px;
+}
+td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+}
+tr:hover { background: rgba(0,0,0,0.025); }
+
+.status {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: inline-block;
+}
+.status.clean    { background: var(--ok-bg);   color: var(--ok-fg); }
+.status.infected { background: var(--warn-bg); color: var(--warn-fg); }
+.status.skip     { background: var(--skip-bg); color: var(--skip-fg); }
+
+.threat { color: var(--infected); font-weight: 600; }
+.hash {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--text-soft);
+}
+
+footer {
+    background: var(--muted);
+    padding: 18px;
+    text-align: center;
+    color: var(--text-soft);
+    font-size: 12px;
+    border-top: 1px solid var(--border);
+}
+
+@media print {
+    body { background: white; padding: 0; }
+    .container { box-shadow: none; }
+    .charts-row { break-inside: avoid; }
+}
+
+@media (max-width: 720px) {
+    .charts-row { grid-template-columns: 1fr; }
+}

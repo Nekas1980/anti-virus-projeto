@@ -1,7 +1,13 @@
-# Nenhuma dependência externa necessária
+# Core (built-in apenas, opcionais abaixo)
 # tkinter está incluído na instalação padrão do Python 3.x
-# Bibliotecas utilizadas: hashlib, json, pathlib, os, shutil (todas built-in)
 
-# Dependências opcionais:
-colorama>=0.4.6  # Para output colorido no terminal
-customtkinter>=5.2.0  # Para interface gráfica moderna (estilo 2026)
+# Dependências comuns
+colorama>=0.4.6           # Output colorido no terminal
+customtkinter>=5.2.0      # GUI Cyber-Sentinel
+requests>=2.31            # Cliente HTTP para VirusTotal
+
+# Opcionais — features podem ser desactivadas se ausentes
+plyer>=2.1                # Desktop notifications (Fase 2)
+openpyxl>=3.1             # Exportação Excel (Fase 3)
+fastapi>=0.110            # Web API (Fase 3)
+uvicorn>=0.27             # Servidor ASGI para FastAPI

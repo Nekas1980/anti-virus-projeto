@@ -1,4 +1,4 @@
-name: Tests
+name: Tests & Quality
 
 on:
   push:
@@ -6,68 +6,184 @@ on:
   pull_request:
     branches: [ main, master, develop ]
 
+permissions:
+  contents: read
+
 jobs:
+  # ──────────────────────────────────────────────────────────────────
+  # Matriz cross-platform: 3 OS × 4 Python versions = 12 configurações
+  # ──────────────────────────────────────────────────────────────────
   test:
+    name: Tests · ${{ matrix.os }} · py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ['3.9', '3.10', '3.11', '3.12']
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install coverage[toml] openpyxl fastapi httpx
 
-    - name: Run unit tests
-      run: |
-        python -m unittest test_virus_project -v
+      - name: Run unit + integration tests via unittest discover
+        run: |
+          python -m unittest discover -s . -p "test_*.py" -v
 
-    - name: Test signature loading
-      run: |
-        python -c "from Virus_project import load_signatures; sigs = load_signatures(__import__('pathlib').Path('signatures.json')); print(f'Loaded {len(sigs)} signatures')"
+      - name: Smoke check — engine importa
+        run: |
+          python -c "from Virus_project import scan_file, load_signatures; print('OK')"
 
-    - name: Test exclusion patterns
-      run: |
-        python -c "from Virus_project import load_exclusions; excl = load_exclusions(__import__('pathlib').Path('exclusions.json')); print(f'Loaded {len(excl)} exclusion patterns')"
-
-    - name: Test report generator
-      run: |
-        python -c "from report_generator import HTMLReportGenerator; from Virus_project import ScanResult; results = [ScanResult('test.txt', 'clean', '', 'abc123')]; HTMLReportGenerator.generate(results); print('HTML report generated successfully')"
-
-    - name: Lint check (optional)
-      run: |
-        python -m py_compile Virus_project.py gui.py scheduler.py virustotal_updater.py report_generator.py
-
-  code-quality:
+  # ──────────────────────────────────────────────────────────────────
+  # Cobertura com threshold de 80% (corre apenas em ubuntu/3.11)
+  # ──────────────────────────────────────────────────────────────────
+  coverage:
+    name: Coverage (≥80%)
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
 
-    - name: Check file sizes
-      run: |
-        echo "=== File Size Check ==="
-        wc -l *.py
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install coverage[toml] openpyxl fastapi httpx
 
-    - name: Check for syntax errors
-      run: |
-        python -m py_compile *.py || echo "Some files have syntax issues"
+      - name: Run coverage
+        run: |
+          coverage run -m unittest discover -s . -p "test_*.py"
+          coverage report
+          coverage xml
+          coverage html
 
-    - name: Verify JSON files
-      run: |
-        for f in *.json; do
-          python -c "import json; json.load(open('$f'))" && echo "✓ $f is valid JSON" || echo "✗ $f has JSON errors"
-        done
+      - name: Upload coverage XML
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          retention-days: 14
+
+      - name: Upload HTML coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov/
+          retention-days: 14
+
+  # ──────────────────────────────────────────────────────────────────
+  # Code quality: black, flake8 (não-bloqueante até estabilizar)
+  # ──────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint (black, flake8)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install lint tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install black flake8
+
+      - name: Black format check (non-blocking)
+        continue-on-error: true
+        run: |
+          black --check --diff .
+
+      - name: Flake8
+        continue-on-error: true
+        run: |
+          flake8 --count --statistics --show-source
+
+  # ──────────────────────────────────────────────────────────────────
+  # Security: bandit (static analysis) + safety (dependencies)
+  # ──────────────────────────────────────────────────────────────────
+  security:
+    name: Security (bandit + safety)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install security tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install "bandit[toml]>=1.7" safety
+
+      - name: Bandit static security analysis
+        run: |
+          bandit -r . -c pyproject.toml -f txt -o bandit-report.txt --severity-level medium || true
+          cat bandit-report.txt
+
+      - name: Upload bandit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.txt
+          retention-days: 14
+
+      - name: Safety dependency check
+        continue-on-error: true
+        run: |
+          safety check --file=requirements.txt --output text || true
+
+  # ──────────────────────────────────────────────────────────────────
+  # Build artifacts: PyInstaller .exe (Windows only, on main or tags)
+  # ──────────────────────────────────────────────────────────────────
+  build-exe:
+    name: Build standalone .exe (Windows)
+    runs-on: windows-latest
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+    needs: [test, coverage]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies + PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller openpyxl
+
+      - name: Build .exe
+        run: pyinstaller build_exe.spec
+
+      - name: Upload .exe artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: antivirus-windows-exe
+          path: dist/
+          retention-days: 30
