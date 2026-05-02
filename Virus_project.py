@@ -38,6 +38,9 @@ def sha256_file(file_path: Path, timeout: Optional[float] = None) -> Optional[st
 
     Retorna None em caso de erro de I/O, ou se exceder o timeout em segundos.
     """
+    if timeout is not None and timeout <= 0:
+        logger.warning(f"Timeout ao ler {file_path} (>{timeout}s)")
+        return None
     try:
         h = hashlib.sha256()
         start = time.monotonic()
