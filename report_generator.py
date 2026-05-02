@@ -105,7 +105,8 @@ def _top_infected_dirs(results: Sequence[ScanResult], limit: int = 10) -> List[t
         if r.status != "infected":
             continue
         try:
-            parent = str(Path(r.file_path).parent)
+            # as_posix() normaliza separadores → consistente entre Win/Unix
+            parent = Path(r.file_path).parent.as_posix()
         except (TypeError, ValueError):
             parent = "(desconhecido)"
         counter[parent] += 1

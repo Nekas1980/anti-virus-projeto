@@ -204,7 +204,9 @@ def create_app():
     )
 
     class ScanRequest(BaseModel):
-        paths: List[str] = Field(..., min_length=1, description="Caminhos a varrer")
+        # Manual validation in `start_scan`; constraints como `min_length` no
+        # campo variam entre versões do Pydantic, por isso evitamos.
+        paths: List[str] = Field(default_factory=list, description="Caminhos a varrer")
 
     @api.get("/api/health")
     def health() -> dict:

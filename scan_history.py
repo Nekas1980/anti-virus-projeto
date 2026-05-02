@@ -83,7 +83,11 @@ class ScanHistory:
             started_at=started_at,
             finished_at=end,
             duration_seconds=max(0.0, end - started_at),
-            paths=[str(p) for p in paths],
+            # Normaliza separadores via as_posix() para Path → consistente
+            # entre Windows e POSIX quando se lê a mesma DB cross-platform.
+            paths=[
+                p.as_posix() if isinstance(p, Path) else str(p) for p in paths
+            ],
             total=total,
             clean=clean,
             infected=infected,
