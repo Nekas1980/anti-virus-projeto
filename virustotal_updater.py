@@ -20,6 +20,7 @@ from typing import Dict, List, Optional
 
 from config import PATHS, VIRUSTOTAL
 from rate_limiter import RateLimiter, retry
+from Virus_project import load_signatures, save_signatures
 from vt_cache import VTCache
 
 logging.basicConfig(
@@ -124,31 +125,6 @@ def extract_malware_name(vt_data: dict) -> Optional[str]:
         return None
     except Exception:
         return None
-
-
-def load_signatures(signature_file: Path) -> Dict[str, str]:
-    if not signature_file.exists():
-        return {}
-    try:
-        with signature_file.open("r", encoding="utf-8") as f:
-            data = json.load(f)
-        return data.get("malware_hashes", {})
-    except Exception as e:
-        logger.error(f"Erro ao carregar assinaturas: {e}")
-        return {}
-
-
-def save_signatures(signatures: Dict[str, str], signature_file: Path) -> bool:
-    try:
-        signature_file.parent.mkdir(parents=True, exist_ok=True)
-        data = {"malware_hashes": signatures}
-        with signature_file.open("w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-        logger.info(f"Assinaturas salvas em {signature_file}")
-        return True
-    except Exception as e:
-        logger.error(f"Erro ao salvar assinaturas: {e}")
-        return False
 
 
 def update_single_hash(

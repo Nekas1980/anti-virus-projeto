@@ -22,6 +22,7 @@ Para correr::
 from __future__ import annotations
 
 import logging
+import os
 import threading
 import time
 import uuid
@@ -142,9 +143,19 @@ def _run_scan(state: ScanState) -> None:
                 if not matcher.matches(base):
                     targets.append(base)
             else:
-                for f in base.rglob("*"):
-                    if f.is_file() and not matcher.matches(f):
-                        targets.append(f)
+                for current_root, dirs, files in os.walk(base):
+                    # Podar diretórios excluídos
+                    i = len(dirs) - 1
+                    while i >= 0:
+                        d_path = Path(current_root) / dirs[i]
+                        if matcher.matches(d_path):
+                            del dirs[i]
+                        i -= 1
+                    
+                    for f in files:
+                        f_path = Path(current_root) / f
+                        if not matcher.matches(f_path):
+                            targets.append(f_path)
 
         state.total = len(targets)
         if SCAN["cache_enabled"]:

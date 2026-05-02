@@ -39,6 +39,22 @@ class TestExclusionMatcher(unittest.TestCase):
         m = ExclusionMatcher(patterns)
         self.assertEqual(m.patterns, patterns)
 
+    def test_path_normalization_slashes(self):
+        m = ExclusionMatcher(["build/bin"])
+        # Match com forward slashes (Unix)
+        self.assertTrue(m.matches(Path("/project/build/bin/app.exe")))
+        # Match com backslashes (Windows) - simulado via string normalization no matcher
+        self.assertTrue(m.matches(Path("C:\\project\\build\\bin\\app.exe")))
+
+    def test_absolute_path_pattern(self):
+        m = ExclusionMatcher(["/usr/local/bin"])
+        self.assertTrue(m.matches(Path("/usr/local/bin/python")))
+        self.assertFalse(m.matches(Path("/home/user/usr/local/bin/extra")))
+
+    def test_case_insensitivity(self):
+        m = ExclusionMatcher(["NODE_MODULES"])
+        self.assertTrue(m.matches(Path("/project/node_modules/index.js")))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 import hashlib
 import json
+import os
 import shutil
 import logging
 import time
@@ -73,6 +74,19 @@ def load_signatures(signature_file: Path) -> Dict[str, str]:
         logger.error(f"Erro ao carregar assinaturas: {e}")
         return {}
 
+def save_signatures(signatures: Dict[str, str], signature_file: Path) -> bool:
+    """Guarda assinaturas de malware no ficheiro JSON. Retorna True se bem-sucedido."""
+    try:
+        signature_file.parent.mkdir(parents=True, exist_ok=True)
+        data = {"malware_hashes": signatures}
+        with signature_file.open("w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        logger.info(f"Assinaturas salvas em {signature_file}")
+        return True
+    except (IOError, OSError) as e:
+        logger.error(f"Erro ao salvar assinaturas: {e}")
+        return False
+
 def add_signature(file_hash: str, malware_name: str, signature_file: Path = Path("signatures.json")) -> bool:
     """Adiciona uma nova assinatura de malware. Retorna True se bem-sucedido."""
     try:
@@ -81,12 +95,10 @@ def add_signature(file_hash: str, malware_name: str, signature_file: Path = Path
             logger.warning(f"Assinatura já existe: {file_hash}")
             return False
         signatures[file_hash] = malware_name
-        signature_file.parent.mkdir(parents=True, exist_ok=True)
-        data = {"malware_hashes": signatures}
-        with signature_file.open("w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-        logger.info(f"Assinatura adicionada: {file_hash} → {malware_name}")
-        return True
+        if save_signatures(signatures, signature_file):
+            logger.info(f"Assinatura adicionada: {file_hash} → {malware_name}")
+            return True
+        return False
     except (IOError, OSError, json.JSONDecodeError) as e:
         logger.error(f"Erro ao adicionar assinatura: {e}")
         return False
@@ -177,12 +189,23 @@ def scan_directory(
     matcher = ExclusionMatcher(exclusions)
     results: List[ScanResult] = []
     try:
-        for path in root.rglob("*"):
-            if matcher.matches(path):
-                logger.debug(f"Ignorando (exclusão): {path}")
-                continue
-            if path.is_file():
-                results.append(scan_file(path, signatures, cache=cache))
+        for current_root, dirs, files in os.walk(root):
+            # Podar diretórios excluídos para evitar entrar neles (ex: node_modules)
+            # Modificar dirs in-place para que o os.walk não os visite
+            i = len(dirs) - 1
+            while i >= 0:
+                d_path = Path(current_root) / dirs[i]
+                if matcher.matches(d_path):
+                    logger.debug(f"Ignorando diretório (exclusão): {d_path}")
+                    del dirs[i]
+                i -= 1
+
+            for f in files:
+                f_path = Path(current_root) / f
+                if matcher.matches(f_path):
+                    logger.debug(f"Ignorando ficheiro (exclusão): {f_path}")
+                    continue
+                results.append(scan_file(f_path, signatures, cache=cache))
     except (IOError, OSError) as e:
         logger.error(f"Erro ao varrer diretório {root}: {e}")
     return results
@@ -200,7 +223,7 @@ def quarantine_file(file_path: Path, quarantine_dir: Path) -> Optional[Path]:
         logger.info(f"Quarentena: {file_path} → {target}")
         return target
     except (IOError, OSError) as e:
-        logger.error(f"Erro ao quarentena {file_path}: {e}")
+        logger.error(f"Erro ao mover para quarentena {file_path}: {e}")
         return None
 
 def save_report(results: List[ScanResult], output_file: Path) -> bool:

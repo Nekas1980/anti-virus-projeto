@@ -11,6 +11,7 @@ todos os relatórios continuam a funcionar com valores derivados.
 """
 from __future__ import annotations
 
+import html
 import json
 import logging
 import os
@@ -194,9 +195,11 @@ class HTMLReportGenerator:
             if infected:
                 rows = "\n".join(
                     cls.THREAT_ROW.format(
-                        file_path=_truncate(r.file_path, 90),
-                        reason=r.reason or "(desconhecido)",
-                        sha256=(r.sha256[:32] + "…") if len(r.sha256) > 32 else (r.sha256 or "—"),
+                        file_path=html.escape(_truncate(r.file_path, 90)),
+                        reason=html.escape(r.reason or "(desconhecido)"),
+                        sha256=html.escape(
+                            (r.sha256[:32] + "…") if len(r.sha256) > 32 else (r.sha256 or "—")
+                        ),
                     )
                     for r in infected
                 )
@@ -207,10 +210,10 @@ class HTMLReportGenerator:
                 shown = results[:summary_limit]
                 rows = "\n".join(
                     cls.SUMMARY_ROW.format(
-                        file_path=_truncate(r.file_path, 90),
-                        status=r.status.upper(),
-                        status_class=r.status,
-                        sha256=(r.sha256[:24] + "…") if r.sha256 else "N/A",
+                        file_path=html.escape(_truncate(r.file_path, 90)),
+                        status=html.escape(r.status.upper()),
+                        status_class=html.escape(r.status),
+                        sha256=html.escape((r.sha256[:24] + "…") if r.sha256 else "N/A"),
                     )
                     for r in shown
                 )

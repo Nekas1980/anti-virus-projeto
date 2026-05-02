@@ -19,22 +19,29 @@ class ExclusionMatcher:
     def __init__(self, patterns: Iterable[str]):
         self._patterns: List[str] = list(patterns)
         self._path_regexes: List[Pattern[str]] = []
-        self._name_regexes: List[Pattern[str]] = []
         self._compile()
 
     def _compile(self) -> None:
         for pattern in self._patterns:
-            path_pattern = fnmatch.translate(f"*{pattern}*")
-            name_pattern = fnmatch.translate(pattern)
-            self._path_regexes.append(re.compile(path_pattern))
-            self._name_regexes.append(re.compile(name_pattern))
+            # Normaliza separadores para matching cross-platform
+            p = pattern.replace("\\", "/")
+            
+            # Para que padrões como 'node_modules' apanhem o diretório em qualquer parte do path
+            # (ex: /project/node_modules/foo), envolvemos em * se não for absoluto.
+            if not p.startswith(("/", "*")):
+                p = f"*{p}"
+            if not p.endswith("*"):
+                p = f"{p}*"
+            
+            regex = re.compile(fnmatch.translate(p), re.IGNORECASE)
+            self._path_regexes.append(regex)
 
     def matches(self, path: Path) -> bool:
         """Retorna True se o caminho corresponde a algum padrão de exclusão."""
-        path_str = str(path)
-        name = path.name
-        for path_re, name_re in zip(self._path_regexes, self._name_regexes):
-            if path_re.match(path_str) or name_re.match(name):
+        path_str = str(path).replace("\\", "/")
+
+        for path_re in self._path_regexes:
+            if path_re.match(path_str):
                 return True
         return False
 

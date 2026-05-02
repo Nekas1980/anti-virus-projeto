@@ -13,6 +13,7 @@ from Virus_project import (
     load_signatures,
     load_exclusions,
     scan_file,
+    scan_directory,
     should_skip_path,
     add_signature,
     ScanResult,
@@ -173,6 +174,69 @@ class TestScanFile(unittest.TestCase):
         """Testa varredura de arquivo inexistente."""
         result = scan_file(Path("/nonexistent/file"), {})
         self.assertEqual(result.status, "skip")
+
+
+class TestScanDirectory(unittest.TestCase):
+    """Testa varredura recursiva de diretórios."""
+
+    def test_scan_directory_basic(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "file1.txt").write_bytes(b"content1")
+            (root / "file2.txt").write_bytes(b"content2")
+            (root / "subdir").mkdir()
+            (root / "subdir" / "file3.txt").write_bytes(b"content3")
+
+            results = scan_directory(root, {}, [])
+            self.assertEqual(len(results), 3)
+            paths = [Path(r.file_path).name for r in results]
+            self.assertIn("file1.txt", paths)
+            self.assertIn("file2.txt", paths)
+            self.assertIn("file3.txt", paths)
+
+    def test_scan_directory_with_exclusions(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "clean.txt").write_bytes(b"clean")
+            (root / "node_modules").mkdir()
+            (root / "node_modules" / "secret.exe").write_bytes(b"malware")
+            (root / "venv").mkdir()
+            (root / "venv" / "bin").mkdir()
+            (root / "venv" / "bin" / "python").write_bytes(b"python")
+            
+            # Padrões que devem podar diretórios inteiros
+            exclusions = ["node_modules", "venv"]
+            
+            results = scan_directory(root, {}, exclusions)
+            
+            # Deve encontrar apenas clean.txt
+            self.assertEqual(len(results), 1)
+            self.assertEqual(Path(results[0].file_path).name, "clean.txt")
+
+    def test_scan_directory_with_cache(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_dir = Path(tmp)
+            scan_root = tmp_dir / "scan_target"
+            scan_root.mkdir()
+            
+            file_path = scan_root / "test.txt"
+            file_path.write_bytes(b"content")
+            
+            # Cache fora do scan_root para não ser contado como ficheiro
+            cache_path = tmp_dir / "cache.db"
+            cache = HashCache(cache_path)
+            try:
+                # Primeiro scan - popula cache
+                results1 = scan_directory(scan_root, {}, [], cache=cache)
+                self.assertEqual(len(results1), 1)
+                
+                # Modifica arquivo
+                file_path.write_bytes(b"new content")
+                results2 = scan_directory(scan_root, {}, [], cache=cache)
+                self.assertEqual(len(results2), 1)
+                self.assertNotEqual(results1[0].sha256, results2[0].sha256)
+            finally:
+                cache.close()
 
 
 class TestAddSignature(unittest.TestCase):
