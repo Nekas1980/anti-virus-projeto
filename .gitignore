@@ -45,5 +45,19 @@ site/
 .cache/
 .ruff_cache/
 
-# Planos locais
+# Planos e documentos internos (não relevantes para colaboradores externos)
 REDESIGN_PLAN.md
+IMPROVEMENT_PLAN.md
+SESSION_SUMMARY.md
+PLANO_TRABALHO.md
+GUIA_INICIO.md
+ARCHITECTURE.md
+GEMINI.md
+index.html
+launch.json
+
+# Claude Code
+.claude/
+
+# VS Code (configurações pessoais, não partilhadas)
+.vscode/
