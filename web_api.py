@@ -113,6 +113,17 @@ _scans: Dict[str, ScanState] = {}
 _scans_lock = threading.Lock()
 
 
+# Modelo Pydantic ao nível do módulo — definido aqui (em vez de dentro de
+# create_app) para que FastAPI consiga resolver as annotations através de
+# typing.get_type_hints() apesar do `from __future__ import annotations`.
+if _FASTAPI_AVAILABLE:
+    class ScanRequest(BaseModel):
+        paths: List[str]
+else:  # pragma: no cover — definição vazia só para evitar NameError
+    class ScanRequest:  # type: ignore[no-redef]
+        pass
+
+
 def _run_scan(state: ScanState) -> None:
     """Worker síncrono que actualiza ``state`` à medida que o scan progride."""
     cache: Optional[HashCache] = None
@@ -202,11 +213,6 @@ def create_app():
         description="API REST para disparar scans, consultar histórico e descarregar relatórios.",
         version="0.3.0",
     )
-
-    class ScanRequest(BaseModel):
-        # Manual validation in `start_scan`; constraints como `min_length` no
-        # campo variam entre versões do Pydantic, por isso evitamos.
-        paths: List[str] = Field(default_factory=list, description="Caminhos a varrer")
 
     @api.get("/api/health")
     def health() -> dict:
