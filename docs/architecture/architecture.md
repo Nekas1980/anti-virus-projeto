@@ -549,5 +549,5 @@ docker run antivirus-projeto:1.0.0 /home/user/Downloads
 
 ---
 
-**For detailed development setup, see [DEVELOPMENT.md](DEVELOPMENT.md)**
-**For contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md)**
+**For detailed development setup, see [Development guide](development.md)**
+**For contribution guidelines, see [Contributing guidelines](../contribute/guidelines.md)**
