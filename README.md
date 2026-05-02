@@ -1,4 +1,6 @@
-# Anti-Vírus Projeto
+<p align="center">
+  <img src="assets/logo_header_01.png" alt="Anti-Vírus Projeto" width="100%">
+</p>
 
 [![Tests](https://github.com/Nekas1980/anti-virus-projeto/actions/workflows/tests.yml/badge.svg)](https://github.com/Nekas1980/anti-virus-projeto/actions/workflows/tests.yml)
 [![Docs](https://github.com/Nekas1980/anti-virus-projeto/actions/workflows/deploy.yml/badge.svg)](https://nekas1980.github.io/anti-virus-projeto/)
