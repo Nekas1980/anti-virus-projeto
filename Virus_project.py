@@ -247,7 +247,7 @@ def save_report(results: List[ScanResult], output_file: Path) -> bool:
         logger.error(f"Erro ao salvar relatório: {e}")
         return False
 
-def main() -> None:
+def main() -> None:  # pragma: no cover
     """Interface CLI para varredura de antivírus."""
     logger.info("=== Antivírus Projeto — Varredura CLI ===")
     target_dir_input = input("Diretório para escanear: ").strip()
@@ -298,5 +298,5 @@ def main() -> None:
 
     logger.info("=== Varredura concluída ===")
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

@@ -168,7 +168,7 @@ class ScanScheduler:
             for result in infected:
                 quarantine_file(Path(result.file_path), PATHS["quarantine_dir"])
 
-    def run(self) -> None:
+    def run(self) -> None:  # pragma: no cover
         """Executa o scheduler em loop."""
         if not self.config.get("enabled"):
             logger.warning("Scheduler desabilitado na configuração")
@@ -203,7 +203,7 @@ class ScanScheduler:
         return scheduler._save_config()
 
 
-def main() -> None:
+def main() -> None:  # pragma: no cover
     """Interface CLI para o scheduler."""
     import sys
 
@@ -232,5 +232,5 @@ def main() -> None:
         print(f"Comando desconhecido: {command}")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

@@ -191,7 +191,7 @@ def batch_update(
     return added
 
 
-def main() -> None:
+def main() -> None:  # pragma: no cover
     logger.info("=== VirusTotal Signature Updater ===")
     api_key = get_virustotal_key()
     if not api_key:
@@ -214,5 +214,5 @@ def main() -> None:
         cache.close()
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()
