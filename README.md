@@ -2,6 +2,7 @@
   <img src="assets/logo_header_01.png" alt="Anti-Vírus Projeto" width="100%">
 </p>
 
+[![Release](https://img.shields.io/github/v/release/Nekas1980/anti-virus-projeto?color=blue&label=release)](https://github.com/Nekas1980/anti-virus-projeto/releases/latest)
 [![Tests](https://github.com/Nekas1980/anti-virus-projeto/actions/workflows/tests.yml/badge.svg)](https://github.com/Nekas1980/anti-virus-projeto/actions/workflows/tests.yml)
 [![Docs](https://github.com/Nekas1980/anti-virus-projeto/actions/workflows/deploy.yml/badge.svg)](https://nekas1980.github.io/anti-virus-projeto/)
 [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/downloads/)
@@ -14,7 +15,9 @@ Motor de detecção de malware em **Python** desenvolvido no âmbito do IEFP Pyt
 
 > **Aviso:** Projecto educacional. Não substitui um antivírus comercial em produção.
 
-📚 **[Documentação completa](https://nekas1980.github.io/anti-virus-projeto/)** · 🐛 **[Reportar bug](https://github.com/Nekas1980/anti-virus-projeto/issues)**
+📚 **[Documentação completa](https://nekas1980.github.io/anti-virus-projeto/)** · 🐛 **[Reportar bug](https://github.com/Nekas1980/anti-virus-projeto/issues)** · 📦 **[Download v1.0.0](https://github.com/Nekas1980/anti-virus-projeto/releases/latest)**
+
+> **Windows:** descarrega o `.exe` na página de releases — não requer Python instalado.
 
 ---
 
