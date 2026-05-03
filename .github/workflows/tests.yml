@@ -209,23 +209,25 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
           TAG=${GITHUB_REF#refs/tags/}
+          cat > /tmp/release_notes.md << 'NOTES'
+          Consulta o [CHANGELOG](https://github.com/Nekas1980/anti-virus-projeto/blob/main/CHANGELOG.md) para o detalhe completo das alterações.
+
+          ### Instalação rápida (Windows)
+          Descarrega `antivirus.exe` abaixo — não requer Python instalado.
+
+          ### Instalação via código-fonte
+          ```
+          git clone https://github.com/Nekas1980/anti-virus-projeto.git
+          cd anti-virus-projeto
+          pip install -r requirements.txt
+          python main.py
+          ```
+
+          📚 [Documentação](https://nekas1980.github.io/anti-virus-projeto/)
+          NOTES
           gh release create "$TAG" dist/*.exe \
             --title "Anti-Vírus Projeto $TAG" \
-            --notes "## Anti-Vírus Projeto $TAG
-
-Consulta o [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) para o detalhe completo das alterações.
-
-### Instalação rápida (Windows)
-Descarrega \`antivirus.exe\` abaixo — não requer Python instalado.
-
-### Instalação via código-fonte
-\`\`\`bash
-git clone https://github.com/${{ github.repository }}.git
-cd anti-virus-projeto
-pip install -r requirements.txt
-python main.py
-\`\`\`
-
-📚 [Documentação completa](https://nekas1980.github.io/anti-virus-projeto/)"
+            --notes-file /tmp/release_notes.md
