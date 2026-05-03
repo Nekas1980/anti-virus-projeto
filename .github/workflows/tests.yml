@@ -3,11 +3,12 @@ name: Tests & Quality
 on:
   push:
     branches: [ main, master, develop ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main, master, develop ]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   # ──────────────────────────────────────────────────────────────────
@@ -187,3 +188,44 @@ jobs:
           name: antivirus-windows-exe
           path: dist/
           retention-days: 30
+
+  # ──────────────────────────────────────────────────────────────────
+  # GitHub Release — cria release e anexa .exe quando tag v* é pushed
+  # ──────────────────────────────────────────────────────────────────
+  release:
+    name: GitHub Release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-exe]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download .exe artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: antivirus-windows-exe
+          path: dist/
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          gh release create "$TAG" dist/*.exe \
+            --title "Anti-Vírus Projeto $TAG" \
+            --notes "## Anti-Vírus Projeto $TAG
+
+Consulta o [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) para o detalhe completo das alterações.
+
+### Instalação rápida (Windows)
+Descarrega \`antivirus.exe\` abaixo — não requer Python instalado.
+
+### Instalação via código-fonte
+\`\`\`bash
+git clone https://github.com/${{ github.repository }}.git
+cd anti-virus-projeto
+pip install -r requirements.txt
+python main.py
+\`\`\`
+
+📚 [Documentação completa](https://nekas1980.github.io/anti-virus-projeto/)"

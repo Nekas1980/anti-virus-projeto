@@ -2,7 +2,11 @@
 
 Todas as mudanças relevantes ao projeto. Formato baseado em [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased] — 2026-05-02
+## [1.0.0] — 2026-05-03
+
+Primeira release estável. Todas as fases do plano de melhorias concluídas.
+
+## [1.0.0-rc] — 2026-05-02
 
 Sessão de implementação das Fases 1, 2, 3, 4 e 5 do `IMPROVEMENT_PLAN.md`.
 
